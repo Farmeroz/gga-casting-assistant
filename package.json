@@ -1,0 +1,26 @@
+{
+  "name": "gga-casting-assistant",
+  "version": "0.3.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Farmeroz/gga-casting-assistant.git"
+  },
+  "devDependencies": {
+    "prettier": "3.9.6",
+    "fflate": "0.8.2"
+  },
+  "scripts": {
+    "test:setup": "node tools/test-sources.mjs",
+    "test": "node tools/run-tests.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:syntax": "node tools/check-syntax.mjs",
+    "build": "node tools/build-release.mjs",
+    "check": "npm run format:check && npm run check:syntax && npm test && npm run build"
+  }
+}

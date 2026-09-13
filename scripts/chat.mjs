@@ -1,3 +1,4 @@
+import * as log from './log.mjs';
 import { ID, clone, own } from './core.mjs';
 import { requestMutation, approveRecovery } from './mutations.mjs';
 import { selectedRecipients, refreshCard } from './workflow.mjs';
@@ -99,7 +100,7 @@ export function wireChat(message, html) {
         }
       } catch (error) {
         ui.notifications.error(error.message);
-        console.error(ID, error);
+        log.error(error);
       } finally {
         button.disabled = false;
       }

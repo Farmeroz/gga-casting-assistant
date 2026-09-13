@@ -1,3 +1,4 @@
+import * as log from './log.mjs';
 import { ID, own, actorData, resolveReference } from './core.mjs';
 import { CastingAssistant } from './ui.mjs';
 import { wireChat } from './chat.mjs';
@@ -45,7 +46,7 @@ export async function open(actorUuid = null, profileId = null, setup = null) {
     return app;
   } catch (error) {
     ui.notifications.error(error.message);
-    console.error(ID, error);
+    log.error(error);
   }
 }
 export const openAbility = (actorUuid, ability) => open(actorUuid, null, { ability });
@@ -65,7 +66,7 @@ export async function openGrimoire(actorUuid = null) {
     return grimoire;
   } catch (error) {
     ui.notifications.error(error.message);
-    console.error(ID, error);
+    log.error(error);
   }
 }
 class Launcher extends foundry.applications.api.ApplicationV2 {
@@ -137,7 +138,7 @@ Hooks.once('ready', () => {
 });
 Hooks.on('renderChatMessageHTML', wireChat);
 Hooks.on('createChatMessage', (message) => {
-  processRequest(message).catch((error) => console.error(ID, error));
+  processRequest(message).catch((error) => log.error(error));
 });
 Hooks.on('updateActor', (actor) => {
   app?.refreshActor(actor);

@@ -1,3 +1,4 @@
+import * as log from './log.mjs';
 import {
   ID,
   clone,
@@ -393,7 +394,7 @@ export class CastingAssistant extends App {
   error(error) {
     this.status = error.message;
     ui.notifications.error(error.message);
-    console.error(ID, error);
+    log.error(error);
     if (this.rendered) this.renderQuiet();
   }
   async change(event) {
