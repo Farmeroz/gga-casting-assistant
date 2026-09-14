@@ -1,3 +1,5 @@
+import { RPMDesigner } from './rpm-ui.mjs';
+import { MagicResourceWindow } from './resource-ui.mjs';
 import * as log from './log.mjs';
 import { ID, own, actorData, resolveReference } from './core.mjs';
 import { CastingAssistant } from './ui.mjs';
@@ -6,7 +8,7 @@ import { processRequest } from './mutations.mjs';
 import { initialiseRolls } from './rolls.mjs';
 import { Grimoire } from './grimoire.mjs';
 import { profiles } from './profiles.mjs';
-let app, grimoire;
+let app, grimoire, designer, resourceWindow;
 async function resolveActor(actorUuid) {
   const selected = canvas.tokens?.controlled || [];
   let actor = actorUuid
@@ -50,7 +52,30 @@ export async function open(actorUuid = null, profileId = null, setup = null) {
   }
 }
 export const openAbility = (actorUuid, ability) => open(actorUuid, null, { ability });
-export const newBuild = (actorUuid) => open(actorUuid, null, { newBuild: true });
+export async function openDesigner(actorUuid = null, profile = null) {
+  const actor = await resolveActor(actorUuid);
+  if (typeof profile === 'string') profile = profiles(actor).find((p) => p.id === profile);
+  if (designer?.rendered) {
+    await designer.close();
+    if (designer.rendered) {
+      designer.raiseWindow();
+      return designer;
+    }
+  }
+  designer = new RPMDesigner(actor, profile);
+  await designer.render({ force: true });
+  designer.raiseWindow();
+  return designer;
+}
+export const newBuild = (actorUuid) => openDesigner(actorUuid);
+export async function openResources(actorUuid = null, onCreated = null) {
+  const actor = await resolveActor(actorUuid);
+  if (resourceWindow?.rendered) await resourceWindow.close();
+  resourceWindow = new MagicResourceWindow(actor, onCreated);
+  await resourceWindow.render({ force: true });
+  resourceWindow.raiseWindow();
+  return resourceWindow;
+}
 export async function openGrimoire(actorUuid = null) {
   try {
     const actor = await resolveActor(actorUuid);
@@ -134,7 +159,14 @@ Hooks.on('getSceneControlButtons', (controls) => {
   else tokens.tools[ID] = tool;
 });
 Hooks.once('ready', () => {
-  game.modules.get(ID).api = { open, openAbility, newBuild, grimoire: openGrimoire };
+  game.modules.get(ID).api = {
+    open,
+    openAbility,
+    newBuild,
+    designer: openDesigner,
+    resources: openResources,
+    grimoire: openGrimoire,
+  };
 });
 Hooks.on('renderChatMessageHTML', wireChat);
 Hooks.on('createChatMessage', (message) => {

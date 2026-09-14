@@ -1,3 +1,4 @@
+import { thresholdChecks, resolveThresholds } from './threshold.mjs';
 import {
   ID,
   clone,
@@ -58,14 +59,16 @@ export function prepareCast(actor, input) {
     throw new Error(
       'Recover Energy improves resting recovery and does not use a casting roll.  Use the character’s FP recovery controls.',
     );
+  if (p.rules === 'threshold' && !p.rows.some((r) => r.mode === 'tally'))
+    throw new Error('Choose a threshold tracker with Build tally before using Threshold casting.');
   const cost = costFor(p, entry),
     plan = spendPlan(p, resources(actor), cost.final);
   const attack = resolveReference(p.attack, data.attacks);
   if (p.rollAttack && !attack) throw new Error('Choose a linked attack before enabling its roll.');
-  const damage = p.rollDamage ? damageFormula(attack, p, cost.base) : '';
-  if (p.rollDamage) validateDamage(damage);
+  const damage = p.rollDamage || p.damageFormula ? damageFormula(attack, p, cost.base) : '';
+  if (damage) validateDamage(damage);
   const recovery = recoveryPlan(p);
-  let modifier = p.modifier;
+  let modifier = p.modifier - (p.rpmDesign ? p.rpmPathPenalty : 0);
   if (p.rules === 'standard')
     modifier -= plan.filter((r) => r.path === 'system.HP.value').reduce((s, r) => s + r.amount, 0);
   const recipients = selectedRecipients();
@@ -111,7 +114,12 @@ export function cardHTML(cast) {
   const buttons = [];
   if (cast.paid && cast.effect?.amount > 0)
     buttons.push('<button type="button" data-gca-chat="apply">Apply recovery to targets</button>');
-  if (cast.paid && cast.damage && ['success', 'criticalSuccess'].includes(cast.result))
+  if (
+    cast.paid &&
+    !cast.effectsBlocked &&
+    cast.damage &&
+    ['success', 'criticalSuccess'].includes(cast.result)
+  )
     buttons.push(
       `<button type="button" data-gca-chat="damage">${cast.damageRolled ? 'Roll damage again' : 'Roll damage'}</button>`,
     );
@@ -135,19 +143,12 @@ export function cardHTML(cast) {
     buttons.push(
       `<button type="button" data-gca-chat="table" data-table-kind="${atk}">Roll attack critical table</button>`,
     );
-  const over = Math.max(
-    0,
-    ...paid.filter((r) => r.mode === 'tally' && Number.isFinite(r.max)).map((r) => r.after - r.max),
-  );
-  if (over && cast.tables.threshold)
-    buttons.push(
-      `<button type="button" data-gca-chat="table" data-table-kind="threshold">Threshold table (+${Math.ceil(over / cast.thresholdStep)})</button>`,
-    );
   return `<article class="gca-chat"><header><span>CASTING ASSISTANT</span><h3>${esc(cast.name)}</h3></header><p><strong>${esc(cast.actorName)}</strong> · ${esc(resultLabel(cast.result))}</p>
     <p>${cast.roll.total} vs ${cast.roll.target} · Margin ${cast.roll.margin}</p>
     <p>${pageLinks(cast.pageRef)}</p>
     <p><strong>Cost:</strong> ${cost.base} base − ${cost.reduction} reduction = ${cost.final}. <strong>Paid:</strong> ${paid.reduce((s, r) => s + r.amount, 0)}.</p>
     ${paid.length ? `<ul>${paid.map((r) => `<li>${esc(r.name)}: ${r.value} → ${r.after}${r.mode === 'tally' ? ' (tally)' : ''}</li>`).join('')}</ul>` : ''}
+    ${cast.calamities?.length ? `<ul>${cast.calamities.map((c) => `<li>Threshold ${esc(c.name)}: ${c.after}/${c.cap}, +${c.modifier} → ${c.total}: ${esc(c.label)}${c.willError ? ` · ${esc(c.willError)}` : ''}${c.spellAllowed === false ? ' · Spell effects withheld' : ''}</li>`).join('')}</ul>` : ''}
     ${cast.paymentError ? `<p class="gca-error">${esc(cast.paymentError)}</p>` : ''}
     ${cast.attackResult ? `<p><strong>Attack:</strong> ${esc(resultLabel(cast.attackResult))}</p>` : ''}
     ${cast.effect ? `<p><strong>${cast.effect.type === 'heal-hp' ? 'Healing' : 'FP recovery'}:</strong> ${cast.effect.amount} · ${esc(cast.effect.expression)}</p>` : ''}
@@ -215,7 +216,24 @@ export async function cast(actor, input, token) {
       applications: [],
       profileId: p.id || null,
     };
-    if (!paymentError && ['success', 'criticalSuccess'].includes(result)) {
+    if (!paymentError) {
+      try {
+        record.calamities = await resolveThresholds(
+          actor,
+          thresholdChecks(p, resources(actor), payment.rows),
+          rolled.visibility,
+        );
+        record.effectsBlocked = record.calamities.some((c) => c.spellAllowed === false);
+      } catch (error) {
+        record.effectsBlocked = true;
+        record.followupError = `Calamity check needs manual resolution: ${error.message}`;
+      }
+    }
+    if (
+      !paymentError &&
+      !record.effectsBlocked &&
+      ['success', 'criticalSuccess'].includes(result)
+    ) {
       try {
         let attackSucceeded = true;
         if (p.rollAttack) {

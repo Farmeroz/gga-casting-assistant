@@ -17,8 +17,10 @@
     <main>
       <nav aria-label="Guide sections">
         <a href="#start">Get started</a><a href="#grimoire">Grimoire</a><a href="#cast">Cast</a
-        ><a href="#profiles">Profiles</a><a href="#rpm">RPM builds</a><a href="#recovery">Healing</a
-        ><a href="#attacks">Attacks &amp; tables</a><a href="#help">Help</a>
+        ><a href="#profiles">Profiles</a><a href="#rpm-designer">RPM Designer</a
+        ><a href="#magic-resources">Magic resources</a><a href="#rpm">Paste a build</a
+        ><a href="#recovery">Healing</a><a href="#attacks">Attacks &amp; tables</a
+        ><a href="#help">Help</a>
       </nav>
       <section id="start">
         <h2>Get started</h2>
@@ -301,16 +303,109 @@
           edited.
         </p>
       </section>
+      <section id="rpm-designer">
+        <h2>Create an RPM spell</h2>
+        <p>
+          Open the Grimoire and choose <strong>+ Create RPM spell</strong>. Name the ritual and
+          describe what it does. Add each Path/effect combination, choosing Lesser or Greater. Use
+          <strong>Count</strong> when the same effect is required more than once. The GM decides
+          which effects the concept requires.
+        </p>
+        <p>
+          Click a modifier button to add its controls. Enter damage as the dice actually delivered;
+          the designer handles internal, external, and explosive pricing. Range and speed use yards,
+          area uses radius in yards, and subject weight uses pounds for the largest individual
+          subject. Information range uses miles. The live summary shows component costs, the Greater
+          multiplier, trappings, and final energy. The write-up includes the defining modifiers and
+          a typical casting.
+        </p>
+        <p>
+          <strong>Save to Grimoire</strong> preserves the editable construction.
+          <strong>Save &amp; open casting</strong> also opens its casting setup.
+          <strong>Save as new spell</strong> creates a separate variant. Use
+          <strong>Edit RPM design</strong> from the Grimoire or casting window to return to a saved
+          construction. Export/import carries the complete design. Existing pasted text builds
+          remain usable; they are not automatically reconstructed as editable components.
+        </p>
+        <p>
+          The designer selects the lowest required Path skill when all required Paths are uniquely
+          present on the sheet. Otherwise, choose the casting skill in the assistant. Any penalty
+          for using more than two Paths is applied separately from your casting adjustment. Review
+          missing skills, defaults, campaign rulings, and situational modifiers before casting.
+        </p>
+        <p>
+          Creating a charm or conditional ritual includes the Control Magic wrapper and stores the
+          spell for later use. The default casting setup resolves preparation only: it does not
+          release damage or healing. Resolve activation in play. For immediate damage spells, the
+          casting card offers <strong>Roll damage</strong>; enable automatic damage in the casting
+          window if appropriate. Missile attacks still need their delivery roll. Internal damage
+          normally ignores DR after resistance; resolve resistance and the appropriate damage
+          application in play.
+        </p>
+        <p>
+          Some combinations require GM judgement. Warnings draw attention to them without discarding
+          your choices. Use <strong>Custom modifier</strong> and the ruling notes for an agreed
+          effect outside the supplied controls. Additional damage or healing components remain in
+          the design and cost; the casting profile supports one formula of each kind, so resolve any
+          additional components in play.
+        </p>
+        <p>
+          Hover over a control or focus it for help. Book links use your existing GGA PDF mappings,
+          including RPM for Ritual Path Magic. References:
+          <em>GURPS Thaumatology: Ritual Path Magic</em>, pp. 15–19, 25–28, 38.
+        </p>
+      </section>
+      <section id="magic-resources">
+        <h2>Create a magic resource</h2>
+        <p>
+          Under <strong>Casting &amp; resources → Pay with</strong>, choose
+          <strong>Create tracker</strong>. Pick Magic FP, Energy Pool, Threshold, or a custom pool,
+          then set its name, maximum or cap, and current value. Creating the tracker selects it in a
+          single-row payment plan; with multiple rows, it adds a zero-allocation row for you to
+          adjust. Use <strong>auto</strong> for the remaining cost on one row.
+        </p>
+        <p>
+          Ordinary spell cost reductions and outcome policies can still apply when paying with a
+          tally (Thaumatology, p. 76). RPM builds keep their own configured costs. Ordinary pools
+          count down. A threshold tally starts at zero and counts up. Its cap is a safe limit, not
+          an enforced maximum. The tracker can exceed it. Tracker creation preserves other resources
+          and does not require the Ammo Resource Assistant module.
+        </p>
+        <p>
+          A cast using a tally automatically makes a calamity check if the final tally is over the
+          cap. This includes casts that cost zero, failed casts that expend energy, and RPM spells
+          or powers using a tally. At the cap, no check is required. One to four points over
+          produces a check at +0; each full five adds +1. Separate threshold trackers are checked
+          separately. The modifier uses the actual post-payment tally, not the planned full cost.
+        </p>
+        <p>
+          Choose an optional world calamity table when creating the tracker, or under
+          <strong>Advanced → Critical &amp; threshold tables</strong> for an existing tracker. A
+          tracker-specific table and progression take precedence. The built-in option rolls 3d6 with
+          the calculated modifier, displays a short outcome label, and refers to the book. A chosen
+          world table is looked up at that exact total without drawing or rerolling. Apply the
+          listed consequences in play. At 29+, an additional Will roll determines whether the spell
+          can take effect; failure does not refund its cost. The rolls retain the casting roll's
+          chat audience.
+        </p>
+        <p>
+          These checks cover casts resolved through the Casting Assistant. Changes made directly on
+          the sheet, maintenance paid outside the assistant, and other modules' casts are not
+          intercepted. Recovery of pools or tally remains under your control. Reference:
+          <em>GURPS Thaumatology</em>, pp. 76–78.
+        </p>
+      </section>
       <section id="rpm">
         <h2>Parse and save an RPM or power build</h2>
         <p>
-          For a fresh ritual, click <strong>+ New RPM build</strong> in the Grimoire. The casting
-          assistant opens with an empty RPM setup and the parser panel expanded.
+          To import an existing text write-up, open the casting assistant and choose
+          <strong>Paste a build</strong>. Use the RPM Designer when constructing a new ritual from
+          components.
         </p>
         <ol>
           <li>
-            Click <strong>Paste a build</strong>, or start a <strong>+ New RPM build</strong> from
-            the Grimoire. Paste the text in <strong>RPM / power build</strong>.
+            Click <strong>Paste a build</strong> in the casting assistant. Paste the text in
+            <strong>RPM / power build</strong>.
           </li>
           <li>Click <strong>Parse build</strong>.</li>
           <li>
@@ -427,8 +522,9 @@
         </p>
         <p>
           Under <strong>Advanced → Critical &amp; threshold tables</strong>, choose tables from your
-          world. The appropriate buttons appear on the casting card. Set the tally overage per +1
-          modifier to your campaign’s threshold progression; fractional steps round up.
+          world. Critical results offer the appropriate table buttons. Threshold calamity checks
+          happen automatically. Set the full tally overage per +1 modifier to your campaign’s
+          progression; the default is 5 and fractional steps round down.
         </p>
         <p>
           The casting summary, recovery roll, and linked attack retain the casting roll’s
