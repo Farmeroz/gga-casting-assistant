@@ -1,6 +1,6 @@
 # GGA Casting Assistant
 
-Version 0.3.0. Cast spells and powers, browse your Grimoire, save reusable RPM builds, allocate resources, and apply healing in GURPS 4e Game Aid.
+Version 0.3.2. Cast spells and powers, browse your Grimoire, save reusable RPM builds, allocate resources, and apply healing in GURPS 4e Game Aid.
 
 ## Install or update
 
@@ -28,3 +28,7 @@ Open **User-Guide.html** for the complete user guide.
 Report problems through [GitHub Issues](https://github.com/Farmeroz/gga-casting-assistant/issues). Released under the [MIT licence](LICENSE.txt).
 
 GURPS is a trademark of Steve Jackson Games. This unofficial module is not affiliated with or endorsed by Steve Jackson Games, Foundry Gaming LLC, or the GURPS Game Aid maintainers.
+
+## Help tooltips
+
+Hover over a control or focus it with the keyboard for a short explanation. Press Escape to dismiss the help. Under **Configure Settings → Module Settings → GGA Casting Assistant**, turn off **Show help tooltips** to hide optional help on your client. Labels, settings descriptions, and important notices remain visible. Other users keep their own preference.

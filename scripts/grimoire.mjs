@@ -47,6 +47,7 @@ async function metadataDialog(profile) {
   const content = document.createElement('div');
   content.innerHTML = `<div class="gca-book-dialog"><label>Build name<input name="name" value="${esc(profile.name)}" maxlength="120" required></label><label>Tags<input name="tags" value="${esc((profile.tags || []).join(', '))}" maxlength="500" placeholder="Healing, combat, utility"></label><p>Separate tags with commas.  These labels are saved with the build.</p></div>`;
   const result = await foundry.applications.api.DialogV2.wait({
+    classes: ['gca-help-dialog'],
     window: { title: 'Build name & tags' },
     position: { width: 480 },
     content,
