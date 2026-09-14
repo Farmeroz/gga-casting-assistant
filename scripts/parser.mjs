@@ -268,11 +268,22 @@ export function parseProfileText(rawText) {
     }
   }
 
-  const greaterMatches = [...text.matchAll(/\bGreater\s+[A-Za-z]+\s+[A-Za-z]+/gi)].map((m) => m[0]);
-  const lesserMatches = [...text.matchAll(/\bLesser\s+[A-Za-z]+\s+[A-Za-z]+/gi)].map((m) => m[0]);
-  const multiplierMatch = text.match(/[x×]\s*(\d+)\b|\bmultiplier\s*[:=]\s*(\d+)\b/i);
+  const greaterMatches = [
+    ...(spellEffects || text).matchAll(/\bGreater\s+[A-Za-z]+\s+[A-Za-z]+/gi),
+  ].map((m) => m[0]);
+  const lesserMatches = [
+    ...(spellEffects || text).matchAll(/\bLesser\s+[A-Za-z]+\s+[A-Za-z]+/gi),
+  ].map((m) => m[0]);
+  const multiplierMatch = (
+    text.match(/Greater Effects\s*:[^\n]+/i)?.[0] ||
+    typicalCasting ||
+    text
+  ).match(/[x×]\s*(\d+)\b|\bmultiplier\s*[:=]\s*(\d+)\b/i);
   const multiplier = multiplierMatch ? Number(multiplierMatch[1] ?? multiplierMatch[2]) : null;
 
+  const greaterCount = Number(
+    text.match(/Greater Effects\s*:\s*(\d+)/i)?.[1] ?? greaterMatches.length,
+  );
   const notes = [];
   if (spellEffects) notes.push(`Spell Effects: ${spellEffects}`);
   if (inherentModifiers) notes.push(`Inherent Modifiers: ${inherentModifiers}`);
@@ -290,6 +301,7 @@ export function parseProfileText(rawText) {
     inherentModifiers,
     typicalCasting,
     greaterEffects: greaterMatches,
+    greaterCount,
     lesserEffects: lesserMatches,
     multiplier,
     notes,

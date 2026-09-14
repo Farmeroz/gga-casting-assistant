@@ -224,8 +224,8 @@ export class CastingAssistant extends App {
           `<div class="gca-resource-row"><label class="gca-sr" for="gca-source-${i}">Resource ${i + 1}</label><select id="gca-source-${i}" data-source="${i}">${option('', 'Choose resource', r.path)}${available.map((s) => option(s.path, `${s.name} · ${s.value}${Number.isFinite(s.max) ? ` / ${s.max}` : ''}`, r.path)).join('')}</select><label><span class="gca-sr">Amount</span><input aria-label="Resource ${i + 1} amount" data-field="rows.${i}.amount" value="${esc(r.amount)}" placeholder="auto"></label><select aria-label="Resource ${i + 1} direction" data-field="rows.${i}.mode">${option('pool', 'Spend down', r.mode)}${option('tally', 'Build tally', r.mode)}</select>${button('remove-row', '<i class="fa-solid fa-xmark"></i>', `data-index="${i}" title="Remove resource row" aria-label="Remove resource row ${i + 1}"`)}</div>`,
       )
       .join('');
-    const costBody = `<div class="gca-fields">${input('baseCost', 'Base cost / energy', p.baseCost, 'number', 'min="0" step="1"')}${input('modifier', 'Casting adjustment', p.modifier, 'number', 'step="1"')}</div>${check('includeBucket', 'Include my Modifier Bucket', p.includeBucket)}
-      <div class="gca-section-heading"><strong>Pay with</strong>${button('add-row', '+ Resource')}</div>${rows}<p class="gca-hint"><strong>auto</strong> pays the remaining cost from that resource.</p>`;
+    const costBody = `<div class="gca-fields">${input('baseCost', 'Base cost / energy', p.baseCost, 'number', 'min="0" step="1"')}${input('modifier', 'Casting adjustment', p.modifier, 'number', 'step="1"')}</div>${p.rpmDesign && p.rpmPathPenalty ? `<p class="gca-hint">RPM multiple-Path penalty: −${p.rpmPathPenalty}, applied separately from your adjustment.</p>` : ''}${check('includeBucket', 'Include my Modifier Bucket', p.includeBucket)}
+      <div class="gca-section-heading"><strong>Pay with</strong>${button('create-resource', 'Create tracker')}${button('add-row', '+ Resource')}</div>${rows}<p class="gca-hint"><strong>auto</strong> pays the remaining cost from that resource.</p>`;
     const rulesBody = `<div class="gca-fields">${select(
       'rules',
       'Casting rules',
@@ -282,15 +282,18 @@ export class CastingAssistant extends App {
         select(
           `tables.${k}`,
           l,
-          [['', 'None'], ...tables.map((t) => [t.uuid, t.name])],
+          [
+            ['', k === 'threshold' ? 'Built-in calamity roll / tracker table' : 'None'],
+            ...tables.map((t) => [t.uuid, t.name]),
+          ],
           p.tables[k],
         ),
       )
       .join(
         '',
-      )}${p.rules === 'threshold' || p.rows.some((r) => r.mode === 'tally') || p.tables.threshold ? input('thresholdStep', 'Tally overage per +1 table modifier', p.thresholdStep, 'number', 'min="1"') : ''}</div><p class="gca-hint">Choose your world’s tables and its threshold progression.  Table buttons appear when relevant.</p>`;
+      )}${p.rules === 'threshold' || p.rows.some((r) => r.mode === 'tally') || p.tables.threshold ? input('thresholdStep', 'Tally overage per +1 table modifier', p.thresholdStep, 'number', 'min="1"') : ''}</div><p class="gca-hint">Critical tables offer buttons. Threshold checks roll automatically on every cast over the cap, including zero-cost casts. The modifier uses full increments (default 5); tracker-specific settings take precedence. Thaumatology, p. 77.</p>`;
     const parsed = p.parsed;
-    const parser = `<label>RPM or power build<textarea data-field="parserText" rows="6" placeholder="Paste the build to parse its name, cost, damage, and recovery…">${esc(p.parserText)}</textarea></label><div class="gca-inline">${button('parse', 'Parse build')}${button('clear-parser', 'Clear text')}</div>${parsed ? `<div class="gca-parser-summary"><strong>${esc(parsed.title)}</strong><p>${parsed.energy ?? 'No'} energy detected · ${esc(parsed.damageFormula || 'No damage detected')} · ${parsed.greaterEffects?.length || 0} Greater effects</p><p>Check the values above, choose the casting skill, then save the profile.</p></div>` : ''}`;
+    const parser = `<label>RPM or power build<textarea data-field="parserText" rows="6" placeholder="Paste the build to parse its name, cost, damage, and recovery…">${esc(p.parserText)}</textarea></label><div class="gca-inline">${button('parse', 'Parse build')}${button('clear-parser', 'Clear text')}</div>${parsed ? `<div class="gca-parser-summary"><strong>${esc(parsed.title)}</strong><p>${parsed.energy ?? 'No'} energy detected · ${esc(parsed.damageFormula || 'No damage detected')} · ${parsed.greaterCount ?? parsed.greaterEffects?.length ?? 0} Greater effects</p><p>Check the values above, choose the casting skill, then save the profile.</p></div>` : ''}`;
     const notes = `${input('notes', 'Your notes', p.notes)}${input('tagsText', 'Tags (comma separated)', (p.tags || []).join(', '), 'text', 'placeholder="Healing, combat, utility"')}`;
     const combined =
       layout.kind === 'mixed'
@@ -301,8 +304,13 @@ export class CastingAssistant extends App {
     const advanced =
       combined +
       this.panel('rules', 'Casting rules', rulesBody, p.rules, true) +
-      this.panel('tables', 'Critical & threshold tables', tableBody, 'Optional');
-    root.innerHTML = `<header class="gca-top"><div><div class="gca-kicker">GURPS 4e · SPELLS & POWERS</div><h2>Casting Assistant</h2></div><div class="gca-top-tools">${button('grimoire', 'Grimoire', 'title="Browse your Grimoire in a separate window"')}<label class="gca-sr" for="gca-actor">Caster</label><select id="gca-actor" data-actor>${actors.map((a) => option(a.uuid, a.name, this.actor.uuid)).join('')}</select>${button('sheet', '<i class="fa-solid fa-user"></i>', 'title="Open character sheet"')}${button('reset-layout', '<i class="fa-solid fa-up-right-and-down-left-from-center"></i>', 'title="Reset panel sizes"')}</div></header>
+      this.panel(
+        'tables',
+        'Critical & threshold tables',
+        tableBody,
+        p.rows.some((r) => r.mode === 'tally') ? 'Calamities automatic' : 'Optional',
+      );
+    root.innerHTML = `<header class="gca-top"><div><div class="gca-kicker">GURPS 4e · SPELLS & POWERS</div><h2>Casting Assistant</h2></div><div class="gca-top-tools">${button('design-ritual', p.rpmDesign ? 'Edit RPM design' : 'Create RPM spell')}${button('grimoire', 'Grimoire', 'title="Browse your Grimoire in a separate window"')}<label class="gca-sr" for="gca-actor">Caster</label><select id="gca-actor" data-actor>${actors.map((a) => option(a.uuid, a.name, this.actor.uuid)).join('')}</select>${button('sheet', '<i class="fa-solid fa-user"></i>', 'title="Open character sheet"')}${button('reset-layout', '<i class="fa-solid fa-up-right-and-down-left-from-center"></i>', 'title="Reset panel sizes"')}</div></header>
       <div class="gca-workspace ${this.prefs.browserOpen ? '' : 'is-focused'}"><aside class="gca-sidebar"><nav class="gca-tabs" aria-label="Browse">${button('abilities', 'Spells & skills', `aria-pressed="${!showSaved}"`)}${button('profiles', `Saved <span>${saved.length}</span>`, `aria-pressed="${showSaved}"`)}</nav><label class="gca-search"><span class="gca-sr">Search</span><input data-search value="${esc(this.prefs.search)}" placeholder="Search name, college, class…" type="search"></label><div class="gca-browser-tools"><select aria-label="Sort" data-sort>${option('name', 'Name A–Z', this.prefs.sort)}${option('level', 'Highest skill', this.prefs.sort)}</select>${!showSaved ? `<select aria-label="Ability type" data-kind>${option('all', 'Spells & skills', this.prefs.kind)}${option('spell', 'Spells', this.prefs.kind)}${option('skill', 'Skills / powers', this.prefs.kind)}</select>` : ''}</div>
       <div class="gca-list" role="list" aria-label="${showSaved ? 'Saved profiles' : 'Spells and skills'}">${items.map((e) => `<button type="button" role="listitem" data-gca="${showSaved ? 'load-profile' : 'choose-ability'}" data-key="${esc(showSaved ? e.id : e.key)}" class="gca-list-item${(showSaved ? e.id === p.id : e.key === entry?.key) ? ' selected' : ''}"><span><strong>${esc(e.name)}</strong><small>${esc(showSaved ? `${e.rules.toUpperCase()} · ${e.ability?.name || 'Choose casting skill'}` : [e.object?.college || e.kind, e.object?.class].filter(Boolean).join(' · '))}</small></span>${!showSaved ? `<b>${e.level || '–'}</b>` : ''}</button>`).join('') || '<div class="gca-empty">No matches.  Try another search or save your first profile.</div>'}</div><div class="gca-sidebar-footer"><span>${items.length} shown</span>${button('import', 'Import')}${button('export-all', 'Export all')}</div></aside>
       <main class="gca-main"><div class="gca-profile-bar">${button('toggle-browser', '<i class="fa-solid fa-list"></i>', `class="gca-quick-list" title="${this.prefs.browserOpen ? 'Hide' : 'Show'} quick spell list" aria-pressed="${!!this.prefs.browserOpen}"`)}${input('name', 'Profile name', p.name)}<div class="gca-profile-tools">${button('save', 'Save', 'class="gca-primary"')}${button('copy', 'Save copy')}${button('shortcut', '<i class="fa-solid fa-bolt"></i>', 'title="Create hotbar shortcut"')}${button('export', '<i class="fa-solid fa-file-export"></i>', 'title="Export this profile"')}${button('delete', '<i class="fa-solid fa-trash"></i>', 'title="Delete saved profile"')}</div></div>
@@ -426,11 +434,18 @@ export class CastingAssistant extends App {
         const standard = standardDefaults(
           resolveReference(this.draft.ability, actorData(this.actor).abilities),
         );
+        const ordinarySpell =
+          value === 'standard' ||
+          (value === 'threshold' &&
+            !this.draft.rpmDesign &&
+            !this.draft.parserText &&
+            resolveReference(this.draft.ability, actorData(this.actor).abilities)?.kind ===
+              'spell');
         Object.assign(this.draft, {
           rules: value,
-          applyReduction: value === 'standard' ? standard.applyReduction : false,
-          critFree: value === 'standard',
-          failurePolicy: value === 'standard' ? standard.failurePolicy : 'full',
+          applyReduction: ordinarySpell ? standard.applyReduction : false,
+          critFree: ordinarySpell,
+          failurePolicy: ordinarySpell ? standard.failurePolicy : 'full',
           criticalFailurePolicy: 'full',
         });
       } else {
@@ -524,6 +539,30 @@ export class CastingAssistant extends App {
     }
     const action = el.dataset.gca;
     switch (action) {
+      case 'design-ritual':
+        await game.modules
+          .get(ID)
+          .api.designer(this.actor.uuid, this.draft.rpmDesign ? clone(this.draft) : null);
+        return;
+      case 'create-resource':
+        await game.modules.get(ID).api.resources(this.actor.uuid, async (created) => {
+          const row = {
+            name: created.name,
+            path: created.path,
+            mode: created.mode,
+            amount: 'auto',
+          };
+          if (this.draft.rows.length <= 1) this.draft.rows = [row];
+          else {
+            if (this.draft.rows.length >= 16)
+              throw new Error('Tracker created. Select it in an existing resource row.');
+            this.draft.rows.push({ ...row, amount: 0 });
+          }
+          this.dirty = true;
+          this.status = 'Resource tracker created and selected.';
+          await this.renderQuiet();
+        });
+        return;
       case 'grimoire':
         event.stopPropagation();
         await game.modules.get(ID).api.grimoire(this.actor.uuid);

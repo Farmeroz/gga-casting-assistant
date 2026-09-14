@@ -67,6 +67,8 @@ export function wireChat(message, html) {
             break;
           }
           case 'damage':
+            if (cast.effectsBlocked)
+              throw new Error('Resolve the calamity before applying spell effects.');
             if (!cast.paid || !cast.damage)
               throw new Error('This cast has no available damage follow-on.');
             await rollDamage(actor, cast.damage, visibility(message));
@@ -86,7 +88,7 @@ export function wireChat(message, html) {
                 .filter((r) => r.mode === 'tally' && Number.isFinite(r.max))
                 .map((r) => r.after - r.max),
             );
-            const modifier = key === 'threshold' ? Math.ceil(over / cast.thresholdStep) : 0;
+            const modifier = key === 'threshold' ? Math.floor(over / (cast.thresholdStep || 5)) : 0;
             const roll = await new Roll(`(${table.formula}) + ${modifier}`).evaluate();
             const drawn = await table.draw({ roll, displayChat: false });
             // Preserve the original card's exact audience instead of using

@@ -143,6 +143,10 @@ export async function undoRecoveryDirect(card, targetUuid, user = game.user) {
   });
 }
 export async function executeRequest(request, user) {
+  if (request.kind === 'create-tracker') {
+    const { createMagicTracker } = await import('./trackers.mjs');
+    return createMagicTracker(await actorFrom(request.actorUuid), request.definition, user);
+  }
   if (request.kind === 'spend')
     return spendDirect(await actorFrom(request.actorUuid), request.plan, request.operation, user);
   const card = game.messages.get(request.cardId);

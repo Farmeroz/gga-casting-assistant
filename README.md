@@ -1,6 +1,6 @@
 # GGA Casting Assistant
 
-Version 0.3.2. Cast spells and powers, browse your Grimoire, save reusable RPM builds, allocate resources, and apply healing in GURPS 4e Game Aid.
+Version 0.4.2. Cast spells and powers, browse your Grimoire, save reusable RPM builds, allocate resources, and apply healing in GURPS 4e Game Aid.
 
 ## Install or update
 
@@ -17,7 +17,9 @@ Existing profiles remain available. Profiles are saved on your actors, separatel
 
 The casting window shows cost, payment, and controls for the selected effect: **Damage**, **Healing / recovery**, or **Other**. **Automatic** uses the configured effects and available sheet information. Choose a category yourself when needed; use **Advanced** for combined effects, rule options, and tables. The list button beside the profile name opens a compact browser.
 
-The **Grimoire** button in the casting assistant opens a separate browser with cards or a list, search, filters, favourites, and clickable PDF references on cards and in the detail pane, using the character sheet’s book mappings. Its **Saved builds** view organises RPM rituals and other casting profiles with names and tags, duplication, import, and filtered export. **+ New RPM build** opens a fresh setup for parsing and saving a ritual.
+The **Grimoire** button in the casting assistant opens a separate browser with cards or a list, search, filters, favourites, and clickable PDF references on cards and in the detail pane, using the character sheet’s book mappings. Its **Saved builds** view organises RPM rituals and other casting profiles with names and tags, duplication, import, and filtered export. **+ Create RPM spell** opens the RPM Designer. Add Path effects and modifiers, review the live energy breakdown, and save an editable ritual directly to the Grimoire. **Save & open casting** prepares its casting profile, including damage or healing and the lowest available required Path skill. Existing pasted builds remain supported.
+
+In the casting window, **Create tracker** adds a Magic FP, Energy Pool, Threshold, or custom GGA Resource Tracker. Pools spend down. Threshold trackers start at zero, count up, and permit spending beyond their cap. Any Casting Assistant cast using a tally checks for calamity while over the cap, including zero-cost casts. The default is 3d6 +1 per full 5 points over the cap (GURPS 4e Thaumatology, p. 77). Choose a world calamity table, or use the built-in roll with an outcome label and book reference. Calamity effects are applied in play; a result of 29+ also rolls Will with the excess modifier as a penalty before releasing the spell's effects.
 
 Both windows can also be opened from **Configure Settings → Module Settings**. The book button in the token controls opens casting. Players can use their assigned character when no token is selected.
 

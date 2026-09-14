@@ -21,7 +21,11 @@ export const helpConfig = {
     delete: 'Delete this saved casting profile.',
     duplicate: 'Create a separate copy of this saved build.',
     metadata: 'Edit the saved build’s name and tags.',
-    'new-build': 'Start a fresh RPM build for parsing and saving.',
+    'new-build': 'Create a ritual with the RPM Designer, then save it to the Grimoire.',
+    'design-ritual':
+      'Open the guided RPM Designer. Edit effects and modifiers with a live energy breakdown.',
+    'create-resource':
+      'Create and select a Magic FP, Energy Pool, Threshold, or custom GGA Resource Tracker.',
     prepare: 'Copy this entry into the casting assistant for review. This does not cast it.',
     'open-profile': 'Open this saved casting setup for review.',
     favourite: 'Add or remove this entry from your favourites.',
@@ -67,9 +71,39 @@ export const helpConfig = {
     tagsText: 'Comma-separated labels used to organise saved builds.',
     name: 'Name saved with this casting profile or build.',
     tags: 'Comma-separated labels saved with this build.',
-    thresholdStep: 'Tally overage that adds one to the configured calamity-table modifier.',
+    thresholdStep:
+      'Full points over the cap per +1 to 3d6. Default 5, rounded down. A check is still required at +0 when over the cap (Thaumatology, p. 77).',
   },
   rules: [
+    [
+      '[data-rpm="add-effect"]',
+      'Add a separate Path/effect component. Every occurrence contributes energy.',
+    ],
+    [
+      '[data-rpm="remove-effect"], [data-rpm="remove-modifier"]',
+      'Remove this component and recalculate the ritual.',
+    ],
+    [
+      '[data-rpm="save"]',
+      'Save the editable construction and a castable profile in the actor’s Grimoire.',
+    ],
+    [
+      '[data-rpm="prepare"]',
+      'Save the ritual and open the casting setup to choose resources and review the skill.',
+    ],
+    ['[data-rpm="copy"]', 'Save this construction as a separate ritual.'],
+    ['[data-rpm="copy-text"]', 'Copy the compatible RPM spell write-up.'],
+    [
+      '[data-resource-create]',
+      'Create a GGA tracker and select it for this profile. Threshold trackers start at zero and may exceed their cap.',
+    ],
+    ['[data-preset]', 'Choose starting settings for a pool or a threshold tally.'],
+    ['[data-resource-field="step"]', 'Full excess points per +1 on 3d6. RAW is 5.'],
+    [
+      '[data-resource-field="table"]',
+      'Optional world table looked up using the modified 3d6 total. Blank uses the built-in roll and book reference.',
+    ],
+
     ['[data-source]', 'Choose the resource used by this payment row.'],
     ['[data-field$=".amount"]', 'Amount to pay from this row. Use auto to pay the remaining cost.'],
     [
@@ -101,7 +135,7 @@ export const helpConfig = {
     ['[data-gca-approve]', 'Approve the requested recovery application as GM.'],
     ['a.pdflink, .pdflink', 'Open the book and page through GGA’s configured PDF links.'],
   ],
-  actionAttributes: ['data-gca', 'data-grimoire', 'data-action'],
+  actionAttributes: ['data-gca', 'data-grimoire', 'data-action', 'data-rpm'],
 };
 let resolve = helpResolver(helpConfig);
 

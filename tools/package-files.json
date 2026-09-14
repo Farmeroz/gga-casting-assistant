@@ -16,11 +16,18 @@
   "scripts/parser.mjs",
   "scripts/profiles.mjs",
   "scripts/references.mjs",
+  "scripts/resource-ui.mjs",
   "scripts/roll-modifiers.mjs",
   "scripts/rolls.mjs",
+  "scripts/rpm-model.mjs",
+  "scripts/rpm-profile.mjs",
+  "scripts/rpm-ui.mjs",
+  "scripts/threshold.mjs",
   "scripts/tooltip-engine.mjs",
+  "scripts/trackers.mjs",
   "scripts/ui.mjs",
   "scripts/workflow.mjs",
   "styles/casting.css",
-  "styles/grimoire.css"
+  "styles/grimoire.css",
+  "styles/rpm.css"
 ]

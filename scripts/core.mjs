@@ -1,5 +1,6 @@
+import { cleanDesign } from './rpm-model.mjs';
 export const ID = 'gga-casting-assistant';
-export const VERSION = 2;
+export const VERSION = 3;
 export const clone = (x) => JSON.parse(JSON.stringify(x));
 export const normalise = (x) =>
   String(x ?? '')
@@ -93,7 +94,17 @@ export function resources(actor) {
       value: Number(o.value),
       min: Number(o.min) || 0,
       max: Number(o.max),
-      mode: /threshold|tally|calamity/i.test(e.name) ? 'tally' : 'pool',
+      mode: o.gcaResource?.kind
+        ? o.gcaResource.kind === 'threshold'
+          ? 'tally'
+          : 'pool'
+        : /threshold|tally|calamity/i.test(e.name)
+          ? 'tally'
+          : 'pool',
+      thresholdStep:
+        o.gcaResource?.kind === 'threshold' ? Number(o.gcaResource.step) || 5 : undefined,
+      thresholdTable: o.gcaResource?.table || '',
+      resourceKind: o.gcaResource?.kind || '',
     });
   }
   return out;
@@ -142,7 +153,9 @@ export function standardDefaults(entry) {
     allowSelf: true,
     rows: [{ name: 'FP', path: 'system.FP.value', mode: 'pool', amount: 'auto' }],
     tables: { success: '', failure: '', attackSuccess: '', attackFailure: '', threshold: '' },
-    thresholdStep: 1,
+    thresholdStep: 5,
+    rpmDesign: null,
+    rpmPathPenalty: 0,
     parserText: '',
     parsed: null,
     notes: '',
@@ -203,13 +216,20 @@ export function spendPlan(profile, available, cost) {
   const out = [];
   for (const row of rows) {
     const amount = row.amount === 'auto' ? Math.max(0, cost - explicit) : integer(row.amount);
-    if (!amount) continue;
     const candidates = available.filter((r) => r.name === row.name);
     const source =
       available.find((r) => r.path === row.path && r.name === row.name) ||
       (candidates.length === 1 ? candidates[0] : null);
-    if (!source) throw new Error(`Choose a resource for ${row.name || 'the empty row'}.`);
+    if (!source) {
+      if (!amount && row.mode !== 'tally') continue;
+      throw new Error(`Choose a resource for ${row.name || 'the empty row'}.`);
+    }
     const mode = row.mode === 'tally' ? 'tally' : 'pool';
+    if (source.resourceKind === 'threshold' && mode !== 'tally')
+      throw new Error(`${source.name} is a threshold tracker. Choose Build tally.`);
+    if (mode === 'tally' && !Number.isFinite(source.max))
+      throw new Error('Set a cap for the threshold tracker.');
+    if (!amount) continue;
     const existing = out.find((r) => r.path === source.path);
     if (existing && existing.mode !== mode)
       throw new Error('One resource cannot both spend down and build up.');
@@ -254,11 +274,15 @@ export function damageFormula(entry, profile, cost) {
 export function cleanProfile(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input))
     throw new Error('Invalid casting profile.');
-  if (![1, VERSION].includes(input.schemaVersion))
+  if (![1, 2, VERSION].includes(input.schemaVersion))
     throw new Error('This profile uses an unsupported version.');
   const p = standardDefaults(null);
   for (const k of Object.keys(p)) if (Object.hasOwn(input, k)) p[k] = clone(input[k]);
   p.schemaVersion = VERSION;
+  // Old profiles used a +1-per-point, rounded-up placeholder. Migrate to RAW.
+  if (input.schemaVersion < 3 && Number(p.thresholdStep) === 1) p.thresholdStep = 5;
+  p.rpmDesign = p.rpmDesign ? cleanDesign(p.rpmDesign) : null;
+  p.rpmPathPenalty = integer(p.rpmPathPenalty, 'RPM Path penalty', 0, 7);
   p.id = typeof input.id === 'string' && /^[\w-]{1,80}$/.test(input.id) ? input.id : uid();
   p.name = String(p.name).trim().slice(0, 120);
   if (!p.name) throw new Error('Give the profile a name.');

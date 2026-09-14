@@ -21,3 +21,9 @@ Use your normal Foundry/GGA versions and module combination, and refresh connect
 ## Package verification
 
 The build checks module/package versions, install URLs, declared assets, local imports, the allowed archive file list, and every archived file's bytes. The release ZIP contains only runtime files, the licence, and user documentation.
+
+## RPM Designer and magic resources
+
+The suite covers published RPM calculations (pp. 17–19, 39), range/duration/weight boundaries, damage enhancements, full construction export/import, Path selection, and legacy profile migration. Threshold tests cover the cap, +0 overage, full-five-point modifiers, zero-cost casts, separate tallies, exact table lookup, visibility, tracker ownership/creation, and the Will gate at 29+.
+
+Live checks: create an RPM ritual from the Grimoire, save/reopen it, create and select a magic pool and a threshold tracker, cast below/at/above the cap, and cast a zero-cost spell while already over. Confirm the shared and private roll modes, and resolve a cast with a selected world calamity table.

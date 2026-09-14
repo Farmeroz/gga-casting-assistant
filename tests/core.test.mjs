@@ -105,6 +105,7 @@ test('invalid allocations cannot overspend, invent resources, or use two auto ro
 test('a tally builds upward while ordinary pools retain their minimum', () => {
   const tally = {
     name: 'Threshold',
+    max: 30,
     path: 'system.additionalresources.tracker.1.value',
     value: 20,
     min: 0,

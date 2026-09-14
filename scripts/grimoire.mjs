@@ -145,7 +145,7 @@ export class Grimoire extends App {
         ? 'build'
         : item.colleges[0]?.toLowerCase().replace(/[^a-z]/g, '') || 'other';
     return `<article class="gca-book-card ${item.id === this.selected ? 'is-selected' : ''}" data-school="${esc(colour)}">
-      ${button('favourite', item.favourite ? '★' : '☆', `class="gca-book-star" data-id="${esc(item.id)}" aria-label="${item.favourite ? 'Remove' : 'Add'} ${esc(item.name)} ${item.favourite ? 'from' : 'to'} favourites" aria-pressed="${item.favourite}"`)}
+      ${item.profile?.rpmDesign ? button('design-ritual', 'Edit RPM design', `data-id="${esc(item.id)}"`) : ''}${button('favourite', item.favourite ? '★' : '☆', `class="gca-book-star" data-id="${esc(item.id)}" aria-label="${item.favourite ? 'Remove' : 'Add'} ${esc(item.name)} ${item.favourite ? 'from' : 'to'} favourites" aria-pressed="${item.favourite}"`)}
       ${button(
         'select',
         `<span class="gca-book-card-kind">${esc(profile ? RULE_LABELS[item.kind] || item.kind : item.colleges.join(' · ') || 'Skill / power')}</span><strong>${esc(item.name)}</strong>
@@ -194,7 +194,7 @@ export class Grimoire extends App {
             : 'None';
     const parsed = p?.parsed && typeof p.parsed === 'object' ? p.parsed : null;
     return `<header class="gca-book-detail-top"><div class="gca-kicker">${esc(p ? 'SAVED BUILD' : item.kind === 'spell' ? 'SPELL' : 'SKILL / POWER')}</div><h2>${esc(item.name)}</h2><p>${esc(p ? RULE_LABELS[p.rules] || p.rules : item.colleges.join(' · ') || 'Character skill')}</p>
-      <div class="gca-book-detail-actions">${button('prepare', p ? 'Open casting setup' : 'Prepare cast', 'class="gca-primary"')}${button('favourite', item.favourite ? '★ Favourited' : '☆ Favourite', `data-id="${esc(item.id)}" aria-pressed="${item.favourite}"`)}</div></header>
+      <div class="gca-book-detail-actions">${button('prepare', p ? 'Open casting setup' : 'Prepare cast', 'class="gca-primary"')}${p?.rpmDesign ? button('design-ritual', 'Edit RPM design') : ''}${button('favourite', item.favourite ? '★ Favourited' : '☆ Favourite', `data-id="${esc(item.id)}" aria-pressed="${item.favourite}"`)}</div></header>
       <div class="gca-book-detail-scroll"><section class="gca-book-detail-section"><h3>At a glance</h3><dl>${details.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl><div class="gca-book-refs">${pageLinks(item.pageRef)}</div></section>
       ${
         p
@@ -214,7 +214,8 @@ export class Grimoire extends App {
               ['Inherent modifiers', plainText(parsed.inherentModifiers) || '—'],
               [
                 'Greater effects',
-                Array.isArray(parsed.greaterEffects) ? parsed.greaterEffects.length : 0,
+                parsed.greaterCount ??
+                  (Array.isArray(parsed.greaterEffects) ? parsed.greaterEffects.length : 0),
               ],
               ['Multiplier', parsed.multiplier == null ? '—' : `×${parsed.multiplier}`],
             ]
@@ -251,7 +252,7 @@ export class Grimoire extends App {
         ].map((a) => [a.uuid, a]),
       ).values(),
     ];
-    root.innerHTML = `<header class="gca-book-header"><div><div class="gca-kicker">GURPS 4e · ${esc(this.actor.name)}</div><h1>Grimoire</h1><p>Spells, powers, and the builds you return to.</p></div><div class="gca-book-header-tools"><label class="gca-sr" for="gca-book-actor">Character</label><select id="gca-book-actor" data-book-actor>${actors.map((a) => option(a.uuid, a.name, this.actor.uuid)).join('')}</select>${button('casting', 'Casting assistant')}${button('new-build', '+ New RPM build', 'class="gca-primary"')}</div></header>
+    root.innerHTML = `<header class="gca-book-header"><div><div class="gca-kicker">GURPS 4e · ${esc(this.actor.name)}</div><h1>Grimoire</h1><p>Spells, powers, and the builds you return to.</p></div><div class="gca-book-header-tools"><label class="gca-sr" for="gca-book-actor">Character</label><select id="gca-book-actor" data-book-actor>${actors.map((a) => option(a.uuid, a.name, this.actor.uuid)).join('')}</select>${button('casting', 'Casting assistant')}${button('new-build', '+ Create RPM spell', 'class="gca-primary"')}</div></header>
       <div class="gca-book-navigation"><nav class="gca-tabs" aria-label="Grimoire sections">${[
         ['spells', 'Spells'],
         ['skills', 'Skills & powers'],
@@ -416,6 +417,9 @@ export class Grimoire extends App {
         return;
       case 'open-profile':
         await this.actions.open(this.actor.uuid, el.dataset.profileId);
+        return;
+      case 'design-ritual':
+        await game.modules.get(ID).api.designer(this.actor.uuid, currentProfile());
         return;
       case 'new-build':
         event.stopPropagation();

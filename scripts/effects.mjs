@@ -81,6 +81,7 @@ export function effectSummary(p) {
     parts = [];
   if (active.rollAttack) parts.push('Linked attack');
   if (active.rollDamage) parts.push(`Damage: ${active.damageFormula || 'linked attack formula'}`);
+  else if (active.damageFormula) parts.push(`Damage from chat: ${active.damageFormula}`);
   if (active.effectType !== 'none') {
     const auto = /^auto:([12])$/.exec(active.effectAmount),
       amount = auto
