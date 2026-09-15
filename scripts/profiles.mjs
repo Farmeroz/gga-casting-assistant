@@ -11,7 +11,7 @@ import {
 export function profiles(actor) {
   const data = actor.getFlag(ID, 'profiles');
   if (!data) return [];
-  if (![1, 2, VERSION].includes(data.version) || !Array.isArray(data.entries))
+  if (![1, 2, 3, VERSION].includes(data.version) || !Array.isArray(data.entries))
     throw new Error('Unsupported saved profile data.  Use a compatible Casting Assistant version.');
   return data.entries.map((p) => cleanProfile(p));
 }
@@ -48,7 +48,7 @@ export function parseImport(text) {
   const data = JSON.parse(text);
   if (
     data.format !== ID ||
-    ![1, 2, VERSION].includes(data.version) ||
+    ![1, 2, 3, VERSION].includes(data.version) ||
     !Array.isArray(data.profiles) ||
     data.profiles.length > 100
   )

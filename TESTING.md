@@ -27,3 +27,9 @@ The build checks module/package versions, install URLs, declared assets, local i
 The suite covers published RPM calculations (pp. 17–19, 39), range/duration/weight boundaries, damage enhancements, full construction export/import, Path selection, and legacy profile migration. Threshold tests cover the cap, +0 overage, full-five-point modifiers, zero-cost casts, separate tallies, exact table lookup, visibility, tracker ownership/creation, and the Will gate at 29+.
 
 Live checks: create an RPM ritual from the Grimoire, save/reopen it, create and select a magic pool and a threshold tracker, cast below/at/above the cap, and cast a zero-cost spell while already over. Confirm the shared and private roll modes, and resolve a cast with a selected world calamity table.
+
+## Active effects and healing history
+
+Tests cover schema-3 migration; expiry and rewind; zero-cost and paid maintenance; duplicate/concurrent payment requests; FP/resource splits and insufficient funds; cancellation and lapse; threshold checks; blind-card activation; bound healing recipients; per-caster/per-patient/per-spell history, failed attempts, daily boundaries, and interrupted-roll review. Workflow tests execute the real casting and mutation code with only the native GGA roll boundary replaced. DOM tests exercise the duration controls and an actual maintenance button. Summary API tests cover cast/received roles and synthetic actor identity.
+
+Live checks: create a timed Light profile; start its effect; advance game time to maintenance; maintain and let expire; repeat with a threshold tally. Target one patient for Minor Healing twice, then Major Healing, and confirm the preview penalties. In GM Control Sheet, check cast and received badges, click through to the caster, and compare the timer after a time advance. Confirm private/blind behaviour with a connected player.

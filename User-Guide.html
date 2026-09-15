@@ -19,8 +19,8 @@
         <a href="#start">Get started</a><a href="#grimoire">Grimoire</a><a href="#cast">Cast</a
         ><a href="#profiles">Profiles</a><a href="#rpm-designer">RPM Designer</a
         ><a href="#magic-resources">Magic resources</a><a href="#rpm">Paste a build</a
-        ><a href="#recovery">Healing</a><a href="#attacks">Attacks &amp; tables</a
-        ><a href="#help">Help</a>
+        ><a href="#active-effects">Active effects</a><a href="#recovery">Healing</a
+        ><a href="#attacks">Attacks &amp; tables</a><a href="#help">Help</a>
       </nav>
       <section id="start">
         <h2>Get started</h2>
@@ -258,8 +258,9 @@
         </p>
         <p>
           Use the casting-adjustment field for situational modifiers that are not already in GGA or
-          your bucket. Duration, maintenance, resistance rolls, repeated-healing penalties, and
-          special spell restrictions remain for the players and GM to handle.
+          your bucket. Duration and maintenance can be tracked below. Repeated Minor and Major
+          Healing penalties are tracked when enabled. Resolve resistance and special spell
+          restrictions in play.
         </p>
       </section>
       <section id="profiles">
@@ -430,6 +431,87 @@
           shown in the preview are informational.
         </p>
       </section>
+      <section id="active-effects">
+        <h2>Active spells, duration, and maintenance</h2>
+        <p>
+          Choose <strong>Active effects</strong> at the top of the casting window to see this
+          caster's ongoing effects. Each card shows its recipients, reminder, time remaining, and
+          maintenance cost. The list and healing history scroll inside a resizable window.
+        </p>
+        <h3>Set up a continuing spell</h3>
+        <p>
+          Open <strong>Duration &amp; maintenance</strong> on its casting profile. Choose
+          <strong>Timed effect</strong> and an interval, or <strong>No automatic expiry</strong>.
+          Tracking starts off for existing profiles. Simple sheet duration and maintenance values
+          are suggested for new spell setups; review them against the spell description. Set the
+          base maintenance cost independently of the casting cost. High skill can reduce it to zero.
+          The final maintenance rate is saved when the effect starts.
+        </p>
+        <p>
+          Choose its contribution to <strong>spells on</strong>: none, −1 for a spell on, or −3
+          while concentrating. Permanent spells do not contribute. Ordinary spellcasting includes
+          these tracked penalties when <strong>Include tracked spells-on penalty</strong> is
+          checked. Turn that off if you include the same penalties elsewhere. RPM effects default to
+          no standard-magic penalty and no maintenance. The assistant does not apply the effect's
+          bonuses, DR, or GGA conditions; use the reminder and resolve those changes in play.
+        </p>
+        <h3>Start and follow an effect</h3>
+        <p>
+          After a successful, paid cast, choose <strong>Start ongoing effect</strong> on its chat
+          card once resistance, delivery, and other conditions are resolved. The timer starts then,
+          and records the targets selected for the cast. For an effect with no remaining resolution
+          step, enable <strong>Start automatically after a successful cast</strong>. A GM must start
+          blind-cast effects. Preparing an RPM charm or conditional ritual does not start its stored
+          effect. Use a separate activation profile when it takes effect.
+        </p>
+        <p>
+          For a spell already active when you adopt the module, configure its remaining duration and
+          choose <strong>Track existing effect from this setup</strong>. This records the current
+          targets and starts its timer now; it does not cast, charge the initial cost, or apply the
+          effect. A casting card creates at most one tracked effect, including after that effect
+          ends.
+        </p>
+        <h3>Maintain or end</h3>
+        <p>
+          At the end of an interval, choose <strong>Maintain</strong> or
+          <strong>Let expire</strong>. Review <strong>Payment resources</strong>; use explicit
+          amounts and <strong>auto</strong> on one row for the remainder. A split suitable for the
+          initial cast may need changing for its smaller maintenance cost. Confirm the caster is
+          awake and able to maintain the spell. No casting roll is made and a critical success on
+          the original cast does not waive later maintenance.
+        </p>
+        <p>
+          Maintenance extends from the previous expiry. If game time jumps over several unpaid
+          intervals, resolve each in order or let the spell expire at the first unpaid boundary.
+          Ordinary casting with tracked penalties pauses until due maintenance is resolved. Time
+          does not automatically spend resources. Zero-cost maintenance still requires your choice.
+          <strong>Cancel early</strong> charges one energy for a standard spell;
+          <strong>Let expire</strong> does not. Use <strong>Ended externally</strong> for an effect
+          already dispelled or otherwise ended in play.
+        </p>
+        <p>
+          Threshold maintenance adds its actual paid cost to the chosen tally. An over-cap increase
+          triggers a calamity check; zero-cost maintenance does not. If calamity resolution is
+          interrupted after payment, the effect displays a GM review marker. Do not pay again.
+          Resolve the calamity and use <strong>GM: review resolved</strong> if it continues, or
+          <strong>Ended externally</strong> if it ended. Effects started from blind casts require GM
+          management.
+        </p>
+        <h3>Game time and the GM overview</h3>
+        <p>
+          Timers use Foundry's world time in seconds, including time advanced by combat or calendar
+          modules. The GM's <strong>Advance time</strong> control changes time for the entire world.
+          Ending a combat does not clear effects. Rewinding time does not undo payments, healing
+          rolls, or recorded expiry. Effects that require a save each turn or special end conditions
+          remain subject to your ruling.
+        </p>
+        <p>
+          With GM Control Sheet 0.3.0 or later, badges appear beside both casters and recipients,
+          showing remaining time or due maintenance. Click a badge to manage the original caster's
+          effects. Recipient statistics are not changed by displaying a badge. Rules: GURPS 4e
+          <em>Basic Set</em>, pp. 237–238; <em>Thaumatology</em>, pp. 76–77.
+        </p>
+      </section>
       <section id="recovery">
         <h2>Healing and FP recovery</h2>
         <p>
@@ -496,6 +578,39 @@
           self-application. For standard self-healing, target the caster before casting so the
           current injury penalty is included in the roll. Recover Energy is handled through resting
           recovery, not a casting roll.
+        </p>
+        <h3>Repeated Minor and Major Healing</h3>
+        <p>
+          Target exactly one patient before casting. Automatic tracking recognises the English spell
+          names in standard magic, including standard spells paid from a threshold tally. For a
+          renamed or translated spell, select <strong>Minor Healing</strong> or
+          <strong>Major Healing</strong> under
+          <strong>Recovery options → Repeated-healing rule</strong>. Choose Off only when resolving
+          that rule yourself. RPM healing is excluded from these standard-magic penalties.
+        </p>
+        <p>
+          The casting preview applies −3 for each earlier attempt by this caster with this spell on
+          this patient during the game day. Minor and Major Healing have separate histories. Failed
+          attempts count. A tracked healing card can only heal its original patient; changing
+          targets after rolling cannot transfer it. On the first attempt, a recognised
+          <strong>Physician</strong> or <strong>Physician/TL</strong> skill at 15+ changes a
+          critical failure to an ordinary failure when that option is enabled. Other names and
+          special rules require manual adjudication. B248.
+        </p>
+        <p>
+          Open <strong>Active effects → Healing history</strong> to review attempts. If a roll was
+          interrupted, confirm whether it happened. A real roll counts regardless of its outcome;
+          only a GM can discard a reservation for which no roll occurred. Undoing HP recovery does
+          not erase a casting attempt. Attempts made directly from the sheet or other modules are
+          not intercepted.
+        </p>
+        <p>
+          Days are 24-hour periods of game time. The world setting
+          <strong>Healing day boundary</strong> sets the offset in seconds from world-time zero, so
+          the reset can align with your calendar. The default is zero. The GM can also reset this
+          caster's healing day manually; this does not restore resources or end spells.
+          <strong>Clear older history</strong> removes older healing records and compacts ended
+          effects while preserving current tracking.
         </p>
         <h3>Undo a mistaken application</h3>
         <p>

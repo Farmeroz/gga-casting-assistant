@@ -121,6 +121,7 @@
   color: var(--gca-text);
 }
 .gca-top {
+  flex-wrap: wrap;
   padding: 17px 20px;
   display: flex;
   align-items: center;
@@ -142,12 +143,17 @@
 }
 .gca-top-tools {
   display: flex;
+  flex: 1 1 480px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  max-width: 45%;
+  max-width: 100%;
 }
 .gca-top-tools select {
+  flex: 1 1 140px;
+  max-width: 260px;
   min-width: 120px;
 }
 .gca-workspace {
@@ -827,7 +833,8 @@
     gap: 8px;
   }
   .gca-top-tools {
-    max-width: 46%;
+    justify-content: flex-start;
+    max-width: 100%;
   }
 }
 @container (max-width:650px) {

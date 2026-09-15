@@ -26,7 +26,10 @@ import {
 } from './profiles.mjs';
 import { parseProfileText, recoveryCommandFromSpell } from './parser.mjs';
 import { pageLinks, openPage } from './references.mjs';
-import { prepareCast, cast } from './workflow.mjs';
+import { prepareCast, cast, selectedRecipients } from './workflow.mjs';
+import { requestMutation } from './mutations.mjs';
+import { ongoingControls, trackingPreview, healingControls } from './tracking-controls.mjs';
+import { maintenanceCost, ongoingDefaults } from './tracking-model.mjs';
 import { CastingWindow, openCharacterSheet } from './application.mjs';
 import { EFFECT_LABELS, effectLayout, effectSummary, suggestAttack } from './effects.mjs';
 
@@ -224,7 +227,7 @@ export class CastingAssistant extends App {
           `<div class="gca-resource-row"><label class="gca-sr" for="gca-source-${i}">Resource ${i + 1}</label><select id="gca-source-${i}" data-source="${i}">${option('', 'Choose resource', r.path)}${available.map((s) => option(s.path, `${s.name} · ${s.value}${Number.isFinite(s.max) ? ` / ${s.max}` : ''}`, r.path)).join('')}</select><label><span class="gca-sr">Amount</span><input aria-label="Resource ${i + 1} amount" data-field="rows.${i}.amount" value="${esc(r.amount)}" placeholder="auto"></label><select aria-label="Resource ${i + 1} direction" data-field="rows.${i}.mode">${option('pool', 'Spend down', r.mode)}${option('tally', 'Build tally', r.mode)}</select>${button('remove-row', '<i class="fa-solid fa-xmark"></i>', `data-index="${i}" title="Remove resource row" aria-label="Remove resource row ${i + 1}"`)}</div>`,
       )
       .join('');
-    const costBody = `<div class="gca-fields">${input('baseCost', 'Base cost / energy', p.baseCost, 'number', 'min="0" step="1"')}${input('modifier', 'Casting adjustment', p.modifier, 'number', 'step="1"')}</div>${p.rpmDesign && p.rpmPathPenalty ? `<p class="gca-hint">RPM multiple-Path penalty: −${p.rpmPathPenalty}, applied separately from your adjustment.</p>` : ''}${check('includeBucket', 'Include my Modifier Bucket', p.includeBucket)}
+    const costBody = `<div class="gca-fields">${input('baseCost', 'Base cost / energy', p.baseCost, 'number', 'min="0" step="1"')}${input('modifier', 'Casting adjustment', p.modifier, 'number', 'step="1"')}</div>${p.rpmDesign && p.rpmPathPenalty ? `<p class="gca-hint">RPM multiple-Path penalty: −${p.rpmPathPenalty}, applied separately from your adjustment.</p>` : ''}${check('includeBucket', 'Include my Modifier Bucket', p.includeBucket)}${check('useSpellsOn', 'Include tracked spells-on penalty', p.useSpellsOn)}<p class="gca-hint" data-tracking-preview>${esc(trackingPreview(this.actor, p, entry, selectedRecipients()))}</p>
       <div class="gca-section-heading"><strong>Pay with</strong>${button('create-resource', 'Create tracker')}${button('add-row', '+ Resource')}</div>${rows}<p class="gca-hint"><strong>auto</strong> pays the remaining cost from that resource.</p>`;
     const rulesBody = `<div class="gca-fields">${select(
       'rules',
@@ -261,7 +264,7 @@ export class CastingAssistant extends App {
         ['restore-fp', 'Fatigue Points (FP)'],
       ],
       p.effectType,
-    )}${input('effectAmount', 'Amount or dice formula', p.effectAmount, 'text', 'placeholder="e.g. 4 or 1d-3!"')}</div><div class="gca-targets"><strong>Targets</strong><span>${esc(targets.join(', ') || 'No tokens targeted')}</span></div><div class="gca-checks">${check('autoApply', 'Apply to current targets after success', p.autoApply)}</div><p class="gca-hint">Otherwise, use the recovery button on the casting card.</p><details class="gca-effect-options"><summary>Recovery options</summary>${check('allowSelf', 'Allow the caster as a recipient', p.allowSelf)}<p class="gca-hint"><strong>auto:1</strong> restores base energy; <strong>auto:2</strong> restores twice base energy.  /hp and /fp formulas are also accepted.</p></details>`;
+    )}${input('effectAmount', 'Amount or dice formula', p.effectAmount, 'text', 'placeholder="e.g. 4 or 1d-3!"')}</div><div class="gca-targets"><strong>Targets</strong><span>${esc(targets.join(', ') || 'No tokens targeted')}</span></div><div class="gca-checks">${check('autoApply', 'Apply to current targets after success', p.autoApply)}</div><p class="gca-hint">Otherwise, use the recovery button on the casting card.</p><details class="gca-effect-options"><summary>Recovery options</summary>${check('allowSelf', 'Allow the caster as a recipient', p.allowSelf)}${healingControls(p)}<p class="gca-hint"><strong>auto:1</strong> restores base energy; <strong>auto:2</strong> restores twice base energy.  /hp and /fp formulas are also accepted.</p></details>`;
     const tables = Array.from(game.tables || []).sort((a, b) => a.name.localeCompare(b.name));
     const tableBody = `<div class="gca-fields">${[
       ['success', 'Spell critical success'],
@@ -310,7 +313,7 @@ export class CastingAssistant extends App {
         tableBody,
         p.rows.some((r) => r.mode === 'tally') ? 'Calamities automatic' : 'Optional',
       );
-    root.innerHTML = `<header class="gca-top"><div><div class="gca-kicker">GURPS 4e · SPELLS & POWERS</div><h2>Casting Assistant</h2></div><div class="gca-top-tools">${button('design-ritual', p.rpmDesign ? 'Edit RPM design' : 'Create RPM spell')}${button('grimoire', 'Grimoire', 'title="Browse your Grimoire in a separate window"')}<label class="gca-sr" for="gca-actor">Caster</label><select id="gca-actor" data-actor>${actors.map((a) => option(a.uuid, a.name, this.actor.uuid)).join('')}</select>${button('sheet', '<i class="fa-solid fa-user"></i>', 'title="Open character sheet"')}${button('reset-layout', '<i class="fa-solid fa-up-right-and-down-left-from-center"></i>', 'title="Reset panel sizes"')}</div></header>
+    root.innerHTML = `<header class="gca-top"><div><div class="gca-kicker">GURPS 4e · SPELLS & POWERS</div><h2>Casting Assistant</h2></div><div class="gca-top-tools">${button('design-ritual', p.rpmDesign ? 'Edit RPM design' : 'Create RPM spell')}${button('active-effects', 'Active effects')}${button('grimoire', 'Grimoire', 'title="Browse your Grimoire in a separate window"')}<label class="gca-sr" for="gca-actor">Caster</label><select id="gca-actor" data-actor>${actors.map((a) => option(a.uuid, a.name, this.actor.uuid)).join('')}</select>${button('sheet', '<i class="fa-solid fa-user"></i>', 'title="Open character sheet"')}${button('reset-layout', '<i class="fa-solid fa-up-right-and-down-left-from-center"></i>', 'title="Reset panel sizes"')}</div></header>
       <div class="gca-workspace ${this.prefs.browserOpen ? '' : 'is-focused'}"><aside class="gca-sidebar"><nav class="gca-tabs" aria-label="Browse">${button('abilities', 'Spells & skills', `aria-pressed="${!showSaved}"`)}${button('profiles', `Saved <span>${saved.length}</span>`, `aria-pressed="${showSaved}"`)}</nav><label class="gca-search"><span class="gca-sr">Search</span><input data-search value="${esc(this.prefs.search)}" placeholder="Search name, college, class…" type="search"></label><div class="gca-browser-tools"><select aria-label="Sort" data-sort>${option('name', 'Name A–Z', this.prefs.sort)}${option('level', 'Highest skill', this.prefs.sort)}</select>${!showSaved ? `<select aria-label="Ability type" data-kind>${option('all', 'Spells & skills', this.prefs.kind)}${option('spell', 'Spells', this.prefs.kind)}${option('skill', 'Skills / powers', this.prefs.kind)}</select>` : ''}</div>
       <div class="gca-list" role="list" aria-label="${showSaved ? 'Saved profiles' : 'Spells and skills'}">${items.map((e) => `<button type="button" role="listitem" data-gca="${showSaved ? 'load-profile' : 'choose-ability'}" data-key="${esc(showSaved ? e.id : e.key)}" class="gca-list-item${(showSaved ? e.id === p.id : e.key === entry?.key) ? ' selected' : ''}"><span><strong>${esc(e.name)}</strong><small>${esc(showSaved ? `${e.rules.toUpperCase()} · ${e.ability?.name || 'Choose casting skill'}` : [e.object?.college || e.kind, e.object?.class].filter(Boolean).join(' · '))}</small></span>${!showSaved ? `<b>${e.level || '–'}</b>` : ''}</button>`).join('') || '<div class="gca-empty">No matches.  Try another search or save your first profile.</div>'}</div><div class="gca-sidebar-footer"><span>${items.length} shown</span>${button('import', 'Import')}${button('export-all', 'Export all')}</div></aside>
       <main class="gca-main"><div class="gca-profile-bar">${button('toggle-browser', '<i class="fa-solid fa-list"></i>', `class="gca-quick-list" title="${this.prefs.browserOpen ? 'Hide' : 'Show'} quick spell list" aria-pressed="${!!this.prefs.browserOpen}"`)}${input('name', 'Profile name', p.name)}<div class="gca-profile-tools">${button('save', 'Save', 'class="gca-primary"')}${button('copy', 'Save copy')}${button('shortcut', '<i class="fa-solid fa-bolt"></i>', 'title="Create hotbar shortcut"')}${button('export', '<i class="fa-solid fa-file-export"></i>', 'title="Export this profile"')}${button('delete', '<i class="fa-solid fa-trash"></i>', 'title="Delete saved profile"')}</div></div>
@@ -339,8 +342,8 @@ export class CastingAssistant extends App {
         ],
         p.effectCategory || 'auto',
       )}<p>${esc(layout.reason)}</p>${button('edit-build', p.parserText ? 'Edit build text' : 'Paste a build', 'class="gca-build-button"')}</div>
-      <div class="gca-primary-panels">${this.panel('cost', 'Casting & resources', costBody, `${p.baseCost} base energy`, true)}<div class="gca-effect-panels">${layout.damage ? this.panel('delivery', 'Attack & damage', delivery, p.rollDamage ? 'Damage enabled' : 'Set up the effect', true) : ''}${layout.healing ? this.panel('recovery', 'Healing & recovery', recovery, p.effectType === 'restore-fp' ? 'Restore FP' : 'Heal HP', true) : ''}${!layout.damage && !layout.healing ? '<section class="gca-other-effect"><h3>Resolve the spell’s effect in play</h3><p>The assistant handles the casting roll and resource cost.  Use the PDF reference for the spell’s duration, resistance, and other effects.</p></section>' : ''}</div></div>
-      <div class="gca-resolution"><span>Resolution</span><strong data-effect-preview>${esc(effectSummary(p))}</strong></div>
+      <div class="gca-primary-panels">${this.panel('cost', 'Casting & resources', costBody, `${p.baseCost} base energy`, true)}<div class="gca-effect-panels">${layout.damage ? this.panel('delivery', 'Attack & damage', delivery, p.rollDamage ? 'Damage enabled' : 'Set up the effect', true) : ''}${layout.healing ? this.panel('recovery', 'Healing & recovery', recovery, p.effectType === 'restore-fp' ? 'Restore FP' : 'Heal HP', true) : ''}${!layout.damage && !layout.healing ? '<section class="gca-other-effect"><h3>Resolve the spell’s effect in play</h3><p>The assistant handles the casting roll and resource cost.  Use Duration & maintenance to track an ongoing effect. Resolve resistance and other effects using the PDF reference.</p></section>' : ''}</div></div>
+      ${this.panel('ongoing', 'Duration & maintenance', ongoingControls(p, entry), p.ongoing?.mode === 'off' ? 'Not tracked' : 'Tracking configured')}<div class="gca-resolution"><span>Resolution</span><strong data-effect-preview>${esc(effectSummary(p))}</strong></div>
       ${p.parserText || p.rules === 'rpm' || this.editBuild ? this.panel('parser', 'RPM / power build', parser, p.parserText ? 'Build text saved with profile' : 'Paste and parse', true) : ''}
       ${this.panel('notes', 'Notes & tags', notes, (p.tags || []).join(', '))}${this.panel('advanced', 'Advanced', advanced, 'Rules, combined effects, and tables')}</div></main></div>
       <footer class="gca-footer"><div><strong data-preview>${esc(preview)}</strong><span data-status role="status">${esc(this.status)}${this.dirty ? ' · Unsaved changes' : ''}</span></div>${button('cast', '<i class="fa-solid fa-wand-magic-sparkles"></i> Cast / Resolve', `class="gca-primary gca-cast"${this.busy ? ' disabled' : ''}`)}</footer><input type="file" data-import-file accept="application/json,.json" hidden>`;
@@ -455,7 +458,17 @@ export class CastingAssistant extends App {
       }
       this.dirty = true;
       if (
-        ['rules', 'effectType', 'attackKey', 'abilityKey', 'effectCategory'].includes(path) ||
+        [
+          'rules',
+          'effectType',
+          'attackKey',
+          'abilityKey',
+          'effectCategory',
+          'ongoing.mode',
+          'ongoing.unit',
+          'ongoing.penalty',
+          'healingTracking',
+        ].includes(path) ||
         el.type === 'checkbox'
       ) {
         this.renderQuiet();
@@ -519,6 +532,22 @@ export class CastingAssistant extends App {
     if (preview) preview.textContent = text;
     const effect = root?.querySelector('[data-effect-preview]');
     if (effect) effect.textContent = effectSummary(this.draft);
+    const tracking = root?.querySelector('[data-tracking-preview]');
+    if (tracking)
+      tracking.textContent = trackingPreview(
+        this.actor,
+        this.draft,
+        resolveReference(this.draft.ability, actorData(this.actor).abilities),
+        selectedRecipients(),
+      );
+    const maintenance = root?.querySelector('[data-maintenance-preview]');
+    if (maintenance) {
+      try {
+        maintenance.textContent = `${maintenanceCost(this.draft, resolveReference(this.draft.ability, actorData(this.actor).abilities) || { level: 0 })} energy after the selected reduction. The rate is saved when this effect starts.`;
+      } catch (e) {
+        maintenance.textContent = e.message;
+      }
+    }
     const status = root?.querySelector('[data-status]');
     if (status) status.textContent = `${this.status}${this.dirty ? ' · Unsaved changes' : ''}`;
   }
@@ -539,6 +568,26 @@ export class CastingAssistant extends App {
     }
     const action = el.dataset.gca;
     switch (action) {
+      case 'active-effects':
+        await game.modules.get(ID).api.activeEffects(this.actor.uuid);
+        return;
+      case 'track-existing':
+        if (
+          !(await confirm(
+            'Track existing effect',
+            '<p>Record an effect that is already active, starting its timer now? This does not cast, pay its original cost, or apply its bonuses. Current targets will be recorded as recipients.</p>',
+          ))
+        )
+          return;
+        await requestMutation({
+          kind: 'effect-add',
+          actorUuid: this.actor.uuid,
+          profile: cleanProfile(this.draft),
+          targets: selectedRecipients(),
+          operation: uid(),
+        });
+        await game.modules.get(ID).api.activeEffects(this.actor.uuid);
+        return;
       case 'design-ritual':
         await game.modules
           .get(ID)
@@ -664,6 +713,7 @@ export class CastingAssistant extends App {
         const parsed = parseProfileText(this.draft.parserText);
         Object.assign(this.draft, {
           parsed,
+          ongoing: ongoingDefaults(),
           name: parsed.title,
           effectCategory: 'auto',
           combineEffects: false,
@@ -671,6 +721,7 @@ export class CastingAssistant extends App {
           rollAttack: false,
           rollDamage: false,
           rules: 'rpm',
+          ongoing: ongoingDefaults(),
           applyReduction: false,
           critFree: false,
           failurePolicy: 'full',

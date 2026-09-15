@@ -1,0 +1,100 @@
+.gca-window.gca-active-window .window-content {
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: #667982 var(--gca-bg);
+  color-scheme: dark;
+}
+.gca-active-root {
+  height: auto;
+  min-height: 100%;
+  flex: 0 0 auto;
+  padding: 18px;
+  gap: 12px;
+}
+.gca-active-header,
+.gca-active-card header,
+.gca-active-toolbar,
+.gca-active-actions,
+.gca-healing-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.gca-active-toolbar,
+.gca-active-actions {
+  justify-content: flex-start;
+}
+.gca-active-root h2,
+.gca-active-root h3,
+.gca-active-root p {
+  margin: 0;
+}
+.gca-active-root p {
+  margin-block: 6px;
+}
+.gca-active-header > div,
+.gca-active-card h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.gca-active-root label {
+  display: grid;
+  gap: 4px;
+}
+.gca-active-list {
+  display: grid;
+  gap: 12px;
+}
+.gca-active-card,
+.gca-active-history {
+  background: var(--gca-panel);
+  border: 1px solid var(--gca-line);
+  border-radius: 8px;
+  padding: 14px;
+  min-width: 0;
+}
+.gca-active-card.is-due {
+  border-color: var(--gca-accent);
+}
+.gca-active-card header > strong {
+  color: var(--gca-accent);
+}
+.gca-active-summary {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.gca-active-payment {
+  display: grid;
+  grid-template-columns: minmax(120px, 2fr) minmax(60px, 1fr) minmax(90px, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+  margin-block: 8px;
+}
+.gca-active-history > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.gca-healing-entry {
+  border-top: 1px solid var(--gca-line);
+  padding-block: 10px;
+}
+.gca-healing-entry span {
+  flex: 1 1 260px;
+}
+.gca-active-root .gca-effect-options {
+  margin-top: 10px;
+}
+@container (max-width: 620px) {
+  .gca-active-payment {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .gca-active-header {
+    align-items: flex-start;
+  }
+  .gca-active-root button {
+    white-space: normal;
+  }
+}

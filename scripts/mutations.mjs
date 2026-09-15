@@ -84,6 +84,10 @@ export async function recoveryDirect(card, targets, user = game.user) {
     throw new Error('Choose between 1 and 50 recipients.');
   const resolved = await Promise.all(targets.map(actorFrom)),
     unique = [...new Map(resolved.map((a) => [a.uuid, a])).values()];
+  if (cast.healing && (unique.length !== 1 || unique[0].uuid !== cast.healing.target))
+    throw new Error(
+      'This healing roll is bound to its original patient. Target that patient or cast again for another.',
+    );
   const results = [];
   for (const actor of unique) {
     if (!cast.allowSelf && actor.uuid === caster.uuid) {
@@ -143,6 +147,10 @@ export async function undoRecoveryDirect(card, targetUuid, user = game.user) {
   });
 }
 export async function executeRequest(request, user) {
+  if (/^(effect-|healing-|tracking-)/.test(request.kind)) {
+    const { trackingRequest } = await import('./tracking.mjs');
+    return trackingRequest(request, user);
+  }
   if (request.kind === 'create-tracker') {
     const { createMagicTracker } = await import('./trackers.mjs');
     return createMagicTracker(await actorFrom(request.actorUuid), request.definition, user);
