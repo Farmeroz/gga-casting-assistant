@@ -4,6 +4,10 @@ export const helpConfig = {
   scope:
     '.gca-help-dialog, .gca-window, .gca-book-dialog, .gca-chat-actions, [data-gca-approve], [name^="gga-casting-assistant."], [data-key^="gga-casting-assistant."], [data-tool="gga-casting-assistant"], [data-control="gga-casting-assistant"]',
   actions: {
+    'active-effects':
+      'Open this caster’s active spells, maintenance reminders, and repeated-healing history.',
+    'track-existing':
+      'Record an effect that is already active, starting its timer now. This does not cast it, spend its initial cost, or apply bonuses.',
     abilities: 'Browse spells and skills from the actor’s sheet.',
     profiles: 'Browse casting profiles saved on this actor.',
     cast: 'Resolve this casting setup, including the configured roll, resource payment, and enabled effects. Review the preview first.',
@@ -43,6 +47,31 @@ export const helpConfig = {
     'edit-build': 'Show the build-text editor for pasting or revising a ritual.',
   },
   fields: {
+    useSpellsOn:
+      'Include −1 per tracked spell on, or −3 while concentrating on it, for standard spellcasting. Turn off if you already include these penalties elsewhere. B238.',
+    healingTracking:
+      'Track Minor and Major Healing separately per caster, patient, and game day. Automatic recognises the English spell names; explicit choices support renamed spells. B248.',
+    physicianMitigation:
+      'For a first Minor or Major Healing attempt today, Physician 15+ changes a critical failure to an ordinary failure. The skill must be named Physician or Physician/TL. B248.',
+    'ongoing.resolution':
+      'Choose GM confirmation for resistance or unresolved delivery. No resistance marks recorded targets affected when the successful effect starts.',
+    'ongoing.mode':
+      'Off, a timed duration, or no automatic expiry. Instant and permanent spells need their own interpretation; review the spell description.',
+    'ongoing.amount':
+      'Length of each duration interval. Timers advance with Foundry world time, not real time.',
+    'ongoing.unit': 'Time unit for the duration; game days here are 24 hours.',
+    'ongoing.maintainable':
+      'Offer maintenance at the end of each interval. The caster must be able to maintain the effect; payment is never automatic.',
+    'ongoing.maintenanceCost':
+      'Base energy to maintain for one interval, before the optional high-skill reduction. This is independent of casting cost.',
+    'ongoing.reduceMaintenance':
+      'Apply the selected ability’s high-skill energy reduction to maintenance. A critical casting success does not make later maintenance free. B238.',
+    'ongoing.penalty':
+      'How this effect contributes to tracked spells-on penalties: none, −1, or −3 while concentrating. Permanent spells do not contribute. B238.',
+    'ongoing.autoStart':
+      'Start the timer after a successful paid cast. Enable only when resistance, attack delivery, or other conditions do not still need resolution. Blind casts require GM activation.',
+    'ongoing.summary':
+      'A reminder of the effect and its recipients. This does not apply GGA bonuses, conditions, or changes to recipient statistics.',
     abilityKey: 'Choose the spell or skill used for the casting roll.',
     baseCost: 'Energy cost before any enabled reduction or outcome policy.',
     modifier: 'Adjustment applied to this casting roll.',
@@ -75,6 +104,83 @@ export const helpConfig = {
       'Full points over the cap per +1 to 3d6. Default 5, rounded down. A check is still required at +0 when over the cap (Thaumatology, p. 77).',
   },
   rules: [
+    [
+      '[data-active="target"]',
+      'GM only: record this target’s outcome and optional condition marker. Ending one target leaves the others intact.',
+    ],
+    [
+      '[data-target-part="status"]',
+      'Pending awaits resistance or delivery. Affected receives the spell; Resisted and Ended do not.',
+    ],
+    [
+      '[data-target-part="conditionId"]',
+      'Optional visible marker for an affected target. Existing unrelated conditions are preserved.',
+    ],
+    [
+      '[data-gca-chat="resolve-targets"]',
+      'Start this successful effect once, then open its per-target outcome controls. GM confirmation is required for resisted targets.',
+    ],
+    [
+      '[data-active="maintain"]',
+      'Pay the reviewed maintenance cost once and extend from the previous expiry. Resolve missed intervals separately after a time jump.',
+    ],
+    [
+      '[data-active="expire"]',
+      'End the spell at its unpaid maintenance boundary, without a cancellation cost.',
+    ],
+    [
+      '[data-active="cancel"]',
+      'End a spell early. Standard magic costs one energy, without a high-skill discount. B237.',
+    ],
+    [
+      '[data-active="external"]',
+      'Record a spell that already ended in play, such as a dispelled effect; no cancellation charge.',
+    ],
+    [
+      '[data-active="concentration"]',
+      'Toggle the tracked concentration penalty between −3 and the ordinary −1 spell-on penalty. This does not select a GGA manoeuvre.',
+    ],
+    [
+      '[data-active="advance"]',
+      'GM only: advance the whole world’s game time. This also advances other modules that use world time.',
+    ],
+    [
+      '[data-active="count-attempt"]',
+      'Count a reserved healing attempt after confirming that its roll happened, whether it succeeded or failed.',
+    ],
+    [
+      '[data-active="discard-attempt"]',
+      'GM only: remove a reserved attempt only when no healing roll happened.',
+    ],
+    [
+      '[data-active="reset-healing"]',
+      'GM only: start a fresh healing day for this caster. Does not change HP, FP, or active spells.',
+    ],
+    [
+      '[data-active="clear-history"]',
+      'GM only: remove older healing history and compact ended effect records. Old casting cards remain used.',
+    ],
+    [
+      '[data-active="reviewed"]',
+      'GM only: confirm the calamity has been resolved and the maintained spell continues. Use Ended externally if it failed.',
+    ],
+    [
+      '[data-payment][data-part="source"]',
+      'Resource to use for this maintenance or cancellation payment.',
+    ],
+    [
+      '[data-payment][data-part="amount"]',
+      'Set an explicit amount, or auto on one row for the rest of this action’s cost.',
+    ],
+    ['[data-payment][data-part="mode"]', 'Spend down from a pool, or add to a threshold tally.'],
+    [
+      '[data-gca-chat="start-effect"]',
+      'After resolving resistance and delivery, start this spell’s duration now. Each casting card can create one tracked effect.',
+    ],
+    [
+      '[data-gca-chat="active-effects"]',
+      'Open the caster’s tracked spells and maintenance controls.',
+    ],
     [
       '[data-rpm="add-effect"]',
       'Add a separate Path/effect component. Every occurrence contributes energy.',

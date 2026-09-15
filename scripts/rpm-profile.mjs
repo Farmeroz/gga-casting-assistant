@@ -1,5 +1,6 @@
 import { actorData, reference, standardDefaults, clone, cleanProfile, uid } from './core.mjs';
-import { calculateDesign, diceText } from './rpm-model.mjs';
+import { calculateDesign, diceText, DURATION_UNITS } from './rpm-model.mjs';
+import { ongoingDefaults, TIME_UNITS } from './tracking-model.mjs';
 import { parseProfileText } from './parser.mjs';
 export function pathChoice(actor, paths) {
   const skills = actorData(actor).abilities.filter((e) => e.kind === 'skill');
@@ -45,6 +46,22 @@ export function designProfile(actor, input, original = null) {
   p.scaleDamage = false;
   p.rollDamage = false;
   p.rollAttack = false;
+  const duration = result.design.modifiers.find((m) => m.kind === 'duration');
+  const seconds = duration ? duration.value * DURATION_UNITS[duration.unit] : 0;
+  const unit =
+    Object.keys(TIME_UNITS)
+      .reverse()
+      .find((u) => seconds >= TIME_UNITS[u] && seconds % TIME_UNITS[u] === 0) || 'seconds';
+  p.ongoing = {
+    ...ongoingDefaults(),
+    ...(p.ongoing || {}),
+    mode: original?.ongoing?.mode || 'off',
+    amount: seconds ? seconds / TIME_UNITS[unit] : 1,
+    unit,
+    penalty: 'none',
+    maintainable: false,
+    reduceMaintenance: false,
+  };
   if (result.design.delivery !== 'immediate') {
     p.effectCategory = 'other';
     p.combineEffects = false;

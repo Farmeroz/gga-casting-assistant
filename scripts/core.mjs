@@ -1,6 +1,7 @@
 import { cleanDesign } from './rpm-model.mjs';
+import { ongoingDefaults, cleanOngoing } from './tracking-model.mjs';
 export const ID = 'gga-casting-assistant';
-export const VERSION = 3;
+export const VERSION = 4;
 export const clone = (x) => JSON.parse(JSON.stringify(x));
 export const normalise = (x) =>
   String(x ?? '')
@@ -131,6 +132,10 @@ export function standardDefaults(entry) {
     criticalFailurePolicy: 'full',
     modifier: 0,
     includeBucket: true,
+    useSpellsOn: true,
+    healingTracking: 'auto',
+    physicianMitigation: true,
+    ongoing: ongoingDefaults(entry),
     effectCategory: 'auto',
     combineEffects: false,
     attack: null,
@@ -274,7 +279,7 @@ export function damageFormula(entry, profile, cost) {
 export function cleanProfile(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input))
     throw new Error('Invalid casting profile.');
-  if (![1, 2, VERSION].includes(input.schemaVersion))
+  if (![1, 2, 3, VERSION].includes(input.schemaVersion))
     throw new Error('This profile uses an unsupported version.');
   const p = standardDefaults(null);
   for (const k of Object.keys(p)) if (Object.hasOwn(input, k)) p[k] = clone(input[k]);
@@ -282,6 +287,16 @@ export function cleanProfile(input) {
   // Old profiles used a +1-per-point, rounded-up placeholder. Migrate to RAW.
   if (input.schemaVersion < 3 && Number(p.thresholdStep) === 1) p.thresholdStep = 5;
   p.rpmDesign = p.rpmDesign ? cleanDesign(p.rpmDesign) : null;
+  p.ongoing = cleanOngoing(
+    input.ongoing ??
+      ongoingDefaults(
+        p.rules === 'standard' || (p.rules === 'threshold' && !p.rpmDesign && !p.parserText)
+          ? p.ability
+          : null,
+      ),
+  );
+  if (!['auto', 'none', 'minor', 'major'].includes(p.healingTracking))
+    throw new Error('Choose a valid repeated-healing rule.');
   p.rpmPathPenalty = integer(p.rpmPathPenalty, 'RPM Path penalty', 0, 7);
   p.id = typeof input.id === 'string' && /^[\w-]{1,80}$/.test(input.id) ? input.id : uid();
   p.name = String(p.name).trim().slice(0, 120);
@@ -307,6 +322,8 @@ export function cleanProfile(input) {
     'applyReduction',
     'critFree',
     'includeBucket',
+    'useSpellsOn',
+    'physicianMitigation',
     'rollAttack',
     'rollDamage',
     'scaleDamage',

@@ -8,7 +8,23 @@ import { processRequest } from './mutations.mjs';
 import { initialiseRolls } from './rolls.mjs';
 import { Grimoire } from './grimoire.mjs';
 import { profiles } from './profiles.mjs';
-let app, grimoire, designer, resourceWindow;
+import { ActiveEffectsWindow } from './active-ui.mjs';
+import { trackingState, effectState } from './tracking-model.mjs';
+import { requestMutation, primaryGM } from './mutations.mjs';
+import { accessibleCasters, activeEffectSummaries } from './tracking-summary.mjs';
+let app, grimoire, designer, resourceWindow, activeWindow;
+export async function openActiveEffects(actorUuid = null, effectId = null) {
+  const actor = await resolveActor(actorUuid);
+  if (activeWindow?.rendered && activeWindow.actor.uuid !== actor.uuid) {
+    await activeWindow.close();
+    if (activeWindow.rendered) return activeWindow;
+  }
+  if (!activeWindow?.rendered) activeWindow = new ActiveEffectsWindow(actor);
+  activeWindow.focusEffect = effectId;
+  await activeWindow.render({ force: true });
+  activeWindow.raiseWindow();
+  return activeWindow;
+}
 async function resolveActor(actorUuid) {
   const selected = canvas.tokens?.controlled || [];
   let actor = actorUuid
@@ -106,7 +122,29 @@ class GrimoireLauncher extends foundry.applications.api.ApplicationV2 {
     return this;
   }
 }
+class ActiveLauncher extends foundry.applications.api.ApplicationV2 {
+  render() {
+    openActiveEffects().catch((e) => ui.notifications.error(e.message));
+    return this;
+  }
+}
 Hooks.once('init', () => {
+  game.settings.register(ID, 'healingDayOffset', {
+    name: 'Healing day boundary (game-time seconds)',
+    hint: 'Offset from world-time zero for each 24-hour healing day. Default 0. Set this to align the reset with your campaign calendar. Changing it affects which attempts count; it does not erase history.',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 0,
+  });
+  game.settings.registerMenu(ID, 'activeEffects', {
+    name: 'Active spells & effects',
+    label: 'Open active effects',
+    hint: 'Durations, maintenance, and repeated-healing history.',
+    icon: 'fa-solid fa-hourglass-half',
+    type: ActiveLauncher,
+    restricted: false,
+  });
   game.settings.registerMenu(ID, 'open', {
     name: 'Casting Assistant',
     label: 'Open casting assistant',
@@ -166,7 +204,10 @@ Hooks.once('ready', () => {
     designer: openDesigner,
     resources: openResources,
     grimoire: openGrimoire,
+    activeEffects: openActiveEffects,
+    getActiveEffects: async (actorUuid) => activeEffectSummaries(await resolveActor(actorUuid)),
   };
+  refreshTracking().catch((error) => log.error(error));
 });
 Hooks.on('renderChatMessageHTML', wireChat);
 Hooks.on('createChatMessage', (message) => {
@@ -175,11 +216,13 @@ Hooks.on('createChatMessage', (message) => {
 Hooks.on('updateActor', (actor) => {
   app?.refreshActor(actor);
   grimoire?.refreshActor(actor);
+  activeWindow?.refreshActor(actor);
 });
 Hooks.on('updateToken', (token) => {
   if (token.actor) {
     app?.refreshActor(token.actor);
     grimoire?.refreshActor(token.actor);
+    activeWindow?.refreshActor(token.actor);
   }
 });
 Hooks.on('targetToken', () => {
@@ -191,4 +234,35 @@ Hooks.on('deleteActor', (actor) => {
     app.render({ force: true });
   }
   if (grimoire?.actor.uuid === actor.uuid) grimoire.close();
+  if (activeWindow?.actor.uuid === actor.uuid) activeWindow.close();
+});
+const announced = new Set();
+export async function refreshTracking() {
+  const actors = accessibleCasters();
+  for (const actor of actors) {
+    const effects = trackingState(actor).effects;
+    if (
+      (!primaryGM() || primaryGM().id === game.user.id) &&
+      effects.some(
+        (e) => e.markerCleanup || (e.status === 'active' && effectState(e) === 'expired'),
+      )
+    )
+      await requestMutation({ kind: 'tracking-tick', actorUuid: actor.uuid });
+    const due = effects.filter((e) => ['due', 'review'].includes(effectState(e)));
+    for (const e of due) {
+      const key = `${actor.uuid}:${e.id}:${e.revision}:${e.endsAt}`;
+      if (!announced.has(key)) {
+        announced.add(key);
+        ui.notifications.info(
+          `${actor.name}: ${e.name} needs ${e.review ? 'GM review' : 'maintenance'}. Open Active effects.`,
+          { permanent: false },
+        );
+      }
+    }
+  }
+  if (app?.rendered && !app.busy) app.renderQuiet();
+  if (activeWindow?.rendered && !activeWindow.busy) activeWindow.renderQuiet();
+}
+Hooks.on('updateWorldTime', () => {
+  refreshTracking().catch((error) => log.error(error));
 });

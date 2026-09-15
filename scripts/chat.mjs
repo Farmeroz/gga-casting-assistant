@@ -43,6 +43,16 @@ export function wireChat(message, html) {
         const actor = await fromUuid(cast.actorUuid);
         own(actor);
         switch (button.dataset.gcaChat) {
+          case 'resolve-targets':
+          case 'start-effect': {
+            const result = await requestMutation({ kind: 'effect-start', cardId: message.id });
+            await refreshCard(message, { activeEffectId: result.effectId });
+            await game.modules.get(ID).api.activeEffects(actor.uuid, result.effectId);
+            break;
+          }
+          case 'active-effects':
+            await game.modules.get(ID).api.activeEffects(actor.uuid);
+            break;
           case 'apply': {
             const targets = selectedRecipients();
             if (!targets.length)
