@@ -8,6 +8,7 @@
   "scripts/chat.mjs",
   "scripts/core.mjs",
   "scripts/effects.mjs",
+  "scripts/effect-targets.mjs",
   "scripts/grimoire-model.mjs",
   "scripts/grimoire.mjs",
   "scripts/help.mjs",

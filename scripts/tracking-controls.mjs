@@ -54,7 +54,15 @@ export function ongoingControls(p, entry) {
             ['concentrating', 'Concentrating (−3)'],
           ],
           o.penalty,
-        )}<label>Effect reminder<textarea data-field="ongoing.summary" rows="2" placeholder="Who or what is affected, and what changes?">${esc(o.summary)}</textarea></label>${check('ongoing.autoStart', 'Start automatically after a successful cast', o.autoStart)}<p class="gca-hint">Otherwise, choose Start ongoing effect on the casting card after resolving resistance or delivery. Blind casts require a GM to start the effect. Tracking records the reminder and casting penalty; apply other bonuses and conditions in play.</p><button type="button" data-gca="track-existing">Track existing effect from this setup</button>`
+        )}${select(
+          'ongoing.resolution',
+          'Target outcomes',
+          [
+            ['pending', 'GM confirms resistance / delivery'],
+            ['none', 'No resistance; successful delivery affects targets'],
+          ],
+          o.resolution || 'pending',
+        )}<label>Effect reminder<textarea data-field="ongoing.summary" rows="2" placeholder="Who or what is affected, and what changes?">${esc(o.summary)}</textarea></label>${check('ongoing.autoStart', 'Start automatically after a successful cast', o.autoStart)}<p class="gca-hint">Use Resolve targets on the casting card to track the spell and confirm each target separately. Automatic start still leaves resisted spells pending until the GM records outcomes. Blind casts require a GM to start the effect. Tracking records the reminder and casting penalty; apply other bonuses and conditions in play.</p><button type="button" data-gca="track-existing">Track existing effect from this setup</button>`
       : '<p class="gca-hint">Enable for a continuing spell or power. Check imported duration and maintenance values against its description.</p>'
   }`;
 }

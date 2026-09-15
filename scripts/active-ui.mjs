@@ -10,6 +10,7 @@ import {
 } from './tracking-model.mjs';
 import { requestMutation } from './mutations.mjs';
 import { openPage } from './references.mjs';
+import { effectTargets, conditionChoices } from './effect-targets.mjs';
 import * as log from './log.mjs';
 
 const button = (action, text, extra = '') =>
@@ -42,6 +43,7 @@ export class ActiveEffectsWindow extends CastingWindow {
     this.payments = new Map();
     this.status = '';
     this.advanceSeconds = '60';
+    this.targetDrafts = new Map();
   }
   paymentRows(e) {
     if (!this.payments.has(e.id)) this.payments.set(e.id, clone(e.profile?.rows || []));
@@ -58,6 +60,34 @@ export class ActiveEffectsWindow extends CastingWindow {
       )
       .join('')}${button('add-payment', '+ Resource')}</details>`;
   }
+  targetHTML(e) {
+    const targets = effectTargets(e);
+    if (!targets.length) return '<p class="gca-hint">No individual targets were recorded.</p>';
+    return `<div class="gca-effect-targets"><h4>Target outcomes</h4><p class="gca-hint">The GM confirms resistance and delivery. Only Affected targets receive this spell. Condition markers are optional and visible on the target.</p>${targets
+      .map((t) => {
+        const key = `${e.id}:${t.actorUuid}`;
+        const stored = this.targetDrafts.get(key);
+        const draft = stored?.revision === e.revision ? stored : { ...t, revision: e.revision };
+        this.targetDrafts.set(key, draft);
+        return `<div class="gca-target-row" data-effect-target="${esc(t.actorUuid)}"><strong>${esc(t.name)}</strong><span class="gca-target-state">${esc({ pending: 'Pending resistance / delivery', affected: 'Affected', resisted: 'Resisted', ended: 'Ended on this target' }[t.status])}</span>${
+          game.user.isGM
+            ? `<label>Outcome<select data-target-part="status">${[
+                ['pending', 'Pending'],
+                ['affected', 'Affected'],
+                ['resisted', 'Resisted'],
+                ['ended', 'Ended on this target'],
+              ]
+                .map(([v, l]) => option(v, l, draft.status))
+                .join(
+                  '',
+                )}</select></label><label>Condition marker<select data-target-part="conditionId">${option('', 'None', draft.conditionId || '')}${conditionChoices()
+                .map((s) => option(s.id, s.name, draft.conditionId))
+                .join('')}</select></label>${button('target', 'Record outcome')}`
+            : '<small>GM manages target outcomes</small>'
+        }</div>`;
+      })
+      .join('')}</div>`;
+  }
   effectHTML(e) {
     const state = effectState(e),
       remaining =
@@ -67,7 +97,7 @@ export class ActiveEffectsWindow extends CastingWindow {
             ? 'Maintenance due'
             : `${timeText(e.endsAt - worldTime())} remaining`;
     const overdue = state === 'due' ? Math.floor((worldTime() - e.endsAt) / e.period) + 1 : 0;
-    return `<article class="gca-active-card ${state === 'due' || state === 'review' ? 'is-due' : ''}" data-effect-id="${esc(e.id)}"><header><h3>${esc(e.name)}</h3><strong>${esc(state === 'review' ? 'Needs GM review' : remaining)}</strong></header><p>${esc(e.recipientNames?.join(', ') || 'No recipient recorded')} · ${e.penalty === 'concentrating' ? 'Concentrating: −3' : e.penalty === 'on' ? 'Spell on: −1' : 'No spells-on penalty'}</p>${e.summary ? `<p class="gca-active-summary">${esc(e.summary)}</p>` : ''}${e.maintainable ? `<p>Maintenance: <strong>${e.maintenanceCost} energy</strong> per ${timeText(e.period)}.</p>` : ''}${overdue > 1 ? `<p class="gca-error">${overdue} unpaid intervals. Resolve each interval in order, or let the spell expire at its first unpaid boundary.</p>` : ''}${e.review ? `<p class="gca-error">${esc(e.review)}. Payment and the interval are already recorded; do not pay again.</p>` : ''}<div class="gca-active-actions">${state === 'due' ? button('maintain', `Maintain · ${e.maintenanceCost} energy`, 'class="gca-primary"') + button('expire', 'Let expire') : ''}${e.penalty !== 'none' ? button('concentration', e.penalty === 'concentrating' ? 'Stop concentrating' : 'Concentrate') : ''}${button('cancel', e.ordinary ? 'Cancel early · 1 energy' : 'End effect')}${button('external', 'Ended externally')}${e.review && game.user.isGM ? button('reviewed', 'GM: review resolved') : ''}</div>${this.paymentHTML(e)}</article>`;
+    return `<article class="gca-active-card ${state === 'due' || state === 'review' ? 'is-due' : ''}" data-effect-id="${esc(e.id)}"><header><h3>${esc(e.name)}</h3><strong>${esc(state === 'review' ? 'Needs GM review' : remaining)}</strong></header><p>${esc(e.recipientNames?.join(', ') || 'No recipient recorded')} · ${e.penalty === 'concentrating' ? 'Concentrating: −3' : e.penalty === 'on' ? 'Spell on: −1' : 'No spells-on penalty'}</p>${e.summary ? `<p class="gca-active-summary">${esc(e.summary)}</p>` : ''}${e.maintainable ? `<p>Maintenance: <strong>${e.maintenanceCost} energy</strong> per ${timeText(e.period)}.</p>` : ''}${overdue > 1 ? `<p class="gca-error">${overdue} unpaid intervals. Resolve each interval in order, or let the spell expire at its first unpaid boundary.</p>` : ''}${e.review ? `<p class="gca-error">${esc(e.review)}. Payment and the interval are already recorded; do not pay again.</p>` : ''}<div class="gca-active-actions">${state === 'due' ? button('maintain', `Maintain · ${e.maintenanceCost} energy`, 'class="gca-primary"') + button('expire', 'Let expire') : ''}${e.penalty !== 'none' ? button('concentration', e.penalty === 'concentrating' ? 'Stop concentrating' : 'Concentrate') : ''}${button('cancel', e.ordinary ? 'Cancel early · 1 energy' : 'End effect')}${button('external', 'Ended externally')}${e.review && game.user.isGM ? button('reviewed', 'GM: review resolved') : ''}</div>${this.targetHTML(e)}${this.paymentHTML(e)}</article>`;
   }
   async _renderHTML() {
     const state = trackingState(this.actor),
@@ -104,7 +134,15 @@ export class ActiveEffectsWindow extends CastingWindow {
             .map(([v, l]) => option(v, l, this.advanceSeconds))
             .join('')}</select></label>${button('advance', 'Advance time')}`
         : ''
-    }</div><p class="gca-hint">Uses game time, including time advanced by combat or your calendar. Resolve resistance and apply the described effect in play. ${button('rules', 'Rules · B237–238')}</p><p role="status">${esc(this.status)}</p><main class="gca-active-list">${active.map((e) => this.effectHTML(e)).join('') || '<div class="gca-empty">No active effects. Enable duration tracking in a casting profile, then cast it or choose Track existing effect.</div>'}</main><details class="gca-active-history"><summary>Healing history · ${history.length} current / unresolved attempt(s)</summary><p>Minor and Major Healing count separately for this caster and each patient. Failures count; undoing HP recovery does not erase the attempt. ${button('healing-rules', 'Rules · B248')}</p>${history.map((h) => `<div class="gca-healing-entry"><span>${esc(h.targetName || h.target)} · ${h.kind === 'minor' ? 'Minor' : 'Major'} Healing · −${h.penalty} on this attempt · ${h.status === 'pending' ? 'Needs review' : 'Counted'}</span>${h.status === 'pending' ? button('count-attempt', 'Confirm roll happened', `data-operation="${esc(h.id)}"`) + (game.user.isGM ? button('discard-attempt', 'GM: no roll happened', `data-operation="${esc(h.id)}"`) : '') : ''}</div>`).join('') || '<p>No tracked healing attempts this day.</p>'}${game.user.isGM ? button('reset-healing', 'GM: reset healing day') + button('clear-history', 'Clear older history') : ''}</details>`;
+    }</div><p class="gca-hint">Uses game time, including time advanced by combat or your calendar. Resolve resistance and apply the described effect in play. ${button('rules', 'Rules · B237–238')}</p><p role="status">${esc(this.status)}</p>${state.effects
+      .filter((e) => e.markerCleanup)
+      .map(
+        (e) =>
+          `<p class="gca-error">${esc(e.name)}: ${esc(e.markerCleanup)}. GM: Refresh to retry marker cleanup.</p>`,
+      )
+      .join(
+        '',
+      )}<main class="gca-active-list">${active.map((e) => this.effectHTML(e)).join('') || '<div class="gca-empty">No active effects. Enable duration tracking in a casting profile, then cast it or choose Track existing effect.</div>'}</main><details class="gca-active-history"><summary>Healing history · ${history.length} current / unresolved attempt(s)</summary><p>Minor and Major Healing count separately for this caster and each patient. Failures count; undoing HP recovery does not erase the attempt. ${button('healing-rules', 'Rules · B248')}</p>${history.map((h) => `<div class="gca-healing-entry"><span>${esc(h.targetName || h.target)} · ${h.kind === 'minor' ? 'Minor' : 'Major'} Healing · −${h.penalty} on this attempt · ${h.status === 'pending' ? 'Needs review' : 'Counted'}</span>${h.status === 'pending' ? button('count-attempt', 'Confirm roll happened', `data-operation="${esc(h.id)}"`) + (game.user.isGM ? button('discard-attempt', 'GM: no roll happened', `data-operation="${esc(h.id)}"`) : '') : ''}</div>`).join('') || '<p>No tracked healing attempts this day.</p>'}${game.user.isGM ? button('reset-healing', 'GM: reset healing day') + button('clear-history', 'Clear older history') : ''}</details>`;
     if (this.busy)
       root.querySelectorAll('button,input,select').forEach((e) => {
         e.disabled = true;
@@ -136,6 +174,12 @@ export class ActiveEffectsWindow extends CastingWindow {
         ?.querySelector(`[data-payment="${focusedIndex}"][data-part="${focusedPart}"]`)
         ?.focus({ preventScroll: true });
     }
+    if (this.focusEffect) {
+      [...root.querySelectorAll('[data-effect-id]')]
+        .find((e) => e.dataset.effectId === this.focusEffect)
+        ?.scrollIntoView?.({ block: 'nearest' });
+      this.focusEffect = null;
+    }
     root.addEventListener('click', (e) => this.click(e).catch((error) => this.error(error)));
     root.addEventListener('change', (e) => this.change(e).catch((error) => this.error(error)));
     root.addEventListener('input', (e) => {
@@ -152,6 +196,12 @@ export class ActiveEffectsWindow extends CastingWindow {
   async change(event) {
     if (this.busy) return;
     const el = event.target;
+    if (el.hasAttribute('data-target-part')) {
+      const id = el.closest('[data-effect-id]').dataset.effectId;
+      const target = el.closest('[data-effect-target]').dataset.effectTarget;
+      this.targetDrafts.get(`${id}:${target}`)[el.dataset.targetPart] = el.value;
+      return;
+    }
     if (el.hasAttribute('data-advance-seconds')) {
       this.advanceSeconds = el.value;
       return;
@@ -193,7 +243,11 @@ export class ActiveEffectsWindow extends CastingWindow {
     }
     this.busy = true;
     try {
-      if (action === 'refresh') return;
+      if (action === 'refresh') {
+        if (game.user.isGM)
+          await requestMutation({ kind: 'tracking-tick', actorUuid: this.actor.uuid });
+        return;
+      }
       if (action === 'advance') {
         if (!game.user.isGM) throw new Error('Only a GM can advance game time.');
         const seconds = Number(this.element.querySelector('[data-advance-seconds]').value);
@@ -235,7 +289,18 @@ export class ActiveEffectsWindow extends CastingWindow {
           revision: effect.revision,
           rows: clone(this.paymentRows(effect)),
         };
-        if (action === 'maintain') {
+        if (action === 'target') {
+          const targetUuid = el.closest('[data-effect-target]').dataset.effectTarget;
+          const draft = this.targetDrafts.get(`${id}:${targetUuid}`);
+          if (!draft) throw new Error('Refresh the target controls first.');
+          request = {
+            ...request,
+            kind: 'effect-target',
+            targetUuid,
+            outcome: draft.status,
+            conditionId: draft.conditionId || '',
+          };
+        } else if (action === 'maintain') {
           if (
             !(await confirm(
               'Maintain spell',

@@ -433,6 +433,36 @@
       </section>
       <section id="active-effects">
         <h2>Active spells, duration, and maintenance</h2>
+        <h3>Resolve each target</h3>
+        <p>
+          Duration profiles default to <strong>GM confirms resistance / delivery</strong>. On a
+          successful paid casting card, choose <strong>Resolve targets / start effect</strong>. Each
+          recorded target starts <strong>Pending</strong>; the GM chooses <strong>Affected</strong>,
+          <strong>Resisted</strong>, or <strong>Ended on this target</strong> and clicks
+          <strong>Record outcome</strong>. Resistance rolls are resolved in play. Selecting a token
+          alone does not establish an effect on it.
+        </p>
+        <p>
+          For spells with no resistance and completed delivery, choose the profile's
+          <strong>No resistance</strong> target setting. Targets become affected when the effect
+          starts. Failed casting or a failed linked delivery attack cannot start an effect. Blind
+          cards require a GM.
+        </p>
+        <p>
+          Ending one target leaves the others intact. When every target has resisted or ended, the
+          tracked spell ends too. The GM may choose an optional visible
+          <strong>Condition marker</strong> for an affected target. Only markers created for this
+          particular effect are removed when it ends; unrelated conditions are preserved. Markers do
+          not supply additional spell-specific statistic changes. A marker error leaves the outcome
+          recorded; the GM can use <strong>Refresh</strong> to retry. Timers and payments are not
+          charged again.
+        </p>
+        <p>
+          Effects from earlier versions keep their timers and payment history. Their selected
+          targets appear pending until the GM confirms them, because those records did not store
+          resistance outcomes.
+        </p>
+
         <p>
           Choose <strong>Active effects</strong> at the top of the casting window to see this
           caster's ongoing effects. Each card shows its recipients, reminder, time remaining, and
@@ -453,16 +483,17 @@
           these tracked penalties when <strong>Include tracked spells-on penalty</strong> is
           checked. Turn that off if you include the same penalties elsewhere. RPM effects default to
           no standard-magic penalty and no maintenance. The assistant does not apply the effect's
-          bonuses, DR, or GGA conditions; use the reminder and resolve those changes in play.
+          bonuses or DR; use the reminder and resolve those changes in play. The GM can separately
+          select a supported condition marker for an affected target.
         </p>
         <h3>Start and follow an effect</h3>
         <p>
-          After a successful, paid cast, choose <strong>Start ongoing effect</strong> on its chat
-          card once resistance, delivery, and other conditions are resolved. The timer starts then,
-          and records the targets selected for the cast. For an effect with no remaining resolution
-          step, enable <strong>Start automatically after a successful cast</strong>. A GM must start
-          blind-cast effects. Preparing an RPM charm or conditional ritual does not start its stored
-          effect. Use a separate activation profile when it takes effect.
+          After a successful, paid cast, choose <strong>Resolve targets / start effect</strong> on
+          its chat card after successful delivery. The timer starts then and records the targets
+          selected for the cast. Record each target's outcome in the window that opens. Automatic
+          start is optional; targets still begin pending unless you choose the no-resistance
+          setting. A GM must start blind-cast effects. Preparing an RPM charm or conditional ritual
+          does not start its stored effect. Use a separate activation profile when it takes effect.
         </p>
         <p>
           For a spell already active when you adopt the module, configure its remaining duration and
@@ -506,7 +537,7 @@
           remain subject to your ruling.
         </p>
         <p>
-          With GM Control Sheet 0.3.0 or later, badges appear beside both casters and recipients,
+          With GM Control Sheet 0.4.0 or later, badges appear beside both casters and recipients,
           showing remaining time or due maintenance. Click a badge to manage the original caster's
           effects. Recipient statistics are not changed by displaying a badge. Rules: GURPS 4e
           <em>Basic Set</em>, pp. 237–238; <em>Thaumatology</em>, pp. 76–77.

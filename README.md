@@ -1,6 +1,6 @@
 # GGA Casting Assistant
 
-Version 0.5.0. Cast spells and powers, browse your Grimoire, save reusable RPM builds, allocate resources, and apply healing in GURPS 4e Game Aid.
+Version 0.6.0. Cast spells and powers, browse your Grimoire, save reusable RPM builds, allocate resources, and apply healing in GURPS 4e Game Aid.
 
 ## Install or update
 
@@ -21,11 +21,11 @@ The **Grimoire** button in the casting assistant opens a separate browser with c
 
 In the casting window, **Create tracker** adds a Magic FP, Energy Pool, Threshold, or custom GGA Resource Tracker. Pools spend down. Threshold trackers start at zero, count up, and permit spending beyond their cap. Any Casting Assistant cast using a tally checks for calamity while over the cap, including zero-cost casts. The default is 3d6 +1 per full 5 points over the cap (GURPS 4e Thaumatology, p. 77). Choose a world calamity table, or use the built-in roll with an outcome label and book reference. Calamity effects are applied in play; a result of 29+ also rolls Will with the excess modifier as a penalty before releasing the spell's effects.
 
-**Active effects** opens a separate view of the caster's ongoing spells and effects, recipients, time remaining, maintenance, and healing history. In **Duration & maintenance**, enable a timer or choose no automatic expiry, review the maintenance cost, and choose how the effect counts towards spells on. By default, a successful cast offers **Start ongoing effect** after resistance or delivery is resolved; automatic start is optional. Timers follow Foundry game time. Due maintenance requires a choice and reviewed payment. Cancelling a standard spell early costs one energy; letting it expire does not. Threshold maintenance checks for calamity when it adds to an over-cap tally, including crossing the cap; zero-cost maintenance does not.
+**Active effects** opens a separate view of the caster's ongoing spells and effects, target outcomes, time remaining, maintenance, and healing history. In **Duration & maintenance**, enable a timer or choose no automatic expiry, review the maintenance cost, and choose how the effect counts towards spells on. After a successful cast and delivery, **Resolve targets / start effect** starts tracking and opens the target controls. The GM records each target's resistance outcome; automatic start is optional and still honours the profile's target-resolution setting. Timers follow Foundry game time. Due maintenance requires a choice and reviewed payment. Cancelling a standard spell early costs one energy; letting it expire does not. Threshold maintenance checks for calamity when it adds to an over-cap tally, including crossing the cap; zero-cost maintenance does not.
 
 Standard Minor and Major Healing now track attempts separately for each caster and patient during the game day. Target exactly one patient before rolling. The preview applies −3 per earlier attempt; failed rolls count. Physician 15+ protection applies to the first attempt when recognised. The GM can review interrupted attempts or reset the healing day. Renamed spells can select their rule explicitly under Recovery options. Rules: **GURPS 4e Basic Set**, pp. 237–238, 248; **Thaumatology**, pp. 76–77.
 
-GM Control Sheet 0.3.0 or later can show these effects beside both their caster and their recipients. Clicking a badge opens the original caster's management window. The modules remain independently usable.
+GM Control Sheet 0.4.0 or later shows these effects beside their caster and their pending or affected targets. Clicking a badge opens the original caster's management window. The modules remain independently usable.
 
 Both windows can also be opened from **Configure Settings → Module Settings**. The book button in the token controls opens casting. Players can use their assigned character when no token is selected.
 
@@ -40,3 +40,5 @@ GURPS is a trademark of Steve Jackson Games. This unofficial module is not affil
 ## Help tooltips
 
 Hover over a control or focus it with the keyboard for a short explanation. Press Escape to dismiss the help. Under **Configure Settings → Module Settings → GGA Casting Assistant**, turn off **Show help tooltips** to hide optional help on your client. Labels, settings descriptions, and important notices remain visible. Other users keep their own preference.
+
+Target outcomes are now separate from target selection. Use **Resolve targets** on the casting card, then record Pending, Affected, Resisted, or Ended for each target. The GM can add an optional condition marker. Existing effects retain their timers; older target lists require confirmation. Use GM Control Sheet 0.4.0 for current-scene token rows and pending/affected target badges.

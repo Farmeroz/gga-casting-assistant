@@ -16,6 +16,7 @@ export function ongoingDefaults(entry = null) {
     reduceMaintenance: entry?.kind === 'spell',
     penalty: entry?.kind === 'spell' && raw !== 'permanent' ? 'on' : 'none',
     autoStart: false,
+    resolution: 'pending',
     summary: '',
   };
 }
@@ -23,6 +24,8 @@ export function cleanOngoing(value) {
   const p = { ...ongoingDefaults(), ...(value || {}) };
   if (!['off', 'timed', 'indefinite'].includes(p.mode) || !Object.hasOwn(TIME_UNITS, p.unit))
     throw new Error('Choose a valid effect duration.');
+  if (!['pending', 'none'].includes(p.resolution))
+    throw new Error('Choose how target outcomes are resolved.');
   p.amount = integer(p.amount, 'Duration', 1, 1000000);
   p.maintenanceCost = integer(p.maintenanceCost, 'Maintenance cost');
   if (!['none', 'on', 'concentrating'].includes(p.penalty))

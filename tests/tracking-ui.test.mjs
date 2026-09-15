@@ -128,6 +128,19 @@ test('summary API maps received effects to their original caster and separates s
     },
     game.user,
   );
+  const pending = activeEffectSummaries(b)[0];
+  assert.equal(pending.pending, true);
+  await trackingRequest(
+    {
+      kind: 'effect-target',
+      actorUuid: a.uuid,
+      effectId: 'received',
+      revision: 0,
+      targetUuid: b.uuid,
+      outcome: 'affected',
+    },
+    game.user,
+  );
   const [effect] = activeEffectSummaries(b);
   assert.equal(effect.casterUuid, a.uuid);
   assert.equal(effect.received, true);

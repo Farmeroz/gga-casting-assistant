@@ -53,6 +53,8 @@ export const helpConfig = {
       'Track Minor and Major Healing separately per caster, patient, and game day. Automatic recognises the English spell names; explicit choices support renamed spells. B248.',
     physicianMitigation:
       'For a first Minor or Major Healing attempt today, Physician 15+ changes a critical failure to an ordinary failure. The skill must be named Physician or Physician/TL. B248.',
+    'ongoing.resolution':
+      'Choose GM confirmation for resistance or unresolved delivery. No resistance marks recorded targets affected when the successful effect starts.',
     'ongoing.mode':
       'Off, a timed duration, or no automatic expiry. Instant and permanent spells need their own interpretation; review the spell description.',
     'ongoing.amount':
@@ -102,6 +104,22 @@ export const helpConfig = {
       'Full points over the cap per +1 to 3d6. Default 5, rounded down. A check is still required at +0 when over the cap (Thaumatology, p. 77).',
   },
   rules: [
+    [
+      '[data-active="target"]',
+      'GM only: record this target’s outcome and optional condition marker. Ending one target leaves the others intact.',
+    ],
+    [
+      '[data-target-part="status"]',
+      'Pending awaits resistance or delivery. Affected receives the spell; Resisted and Ended do not.',
+    ],
+    [
+      '[data-target-part="conditionId"]',
+      'Optional visible marker for an affected target. Existing unrelated conditions are preserved.',
+    ],
+    [
+      '[data-gca-chat="resolve-targets"]',
+      'Start this successful effect once, then open its per-target outcome controls. GM confirmation is required for resisted targets.',
+    ],
     [
       '[data-active="maintain"]',
       'Pay the reviewed maintenance cost once and extend from the previous expiry. Resolve missed intervals separately after a time jump.',

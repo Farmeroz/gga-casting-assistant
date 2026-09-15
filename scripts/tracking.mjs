@@ -10,6 +10,14 @@ import {
   esc,
 } from './core.mjs';
 import { actorQueue } from './mutations.mjs';
+import {
+  effectTargets,
+  newTargets,
+  TARGET_OUTCOMES,
+  conditionChoices,
+  syncTargetMarker,
+  cleanEffectMarkers,
+} from './effect-targets.mjs';
 import { thresholdChecks, resolveThresholds } from './threshold.mjs';
 import {
   trackingState,
@@ -76,6 +84,11 @@ async function beginEffect(actor, snapshot, details, user) {
       profile: snapshot.profile,
       ...details,
     };
+    effect.targets = newTargets(
+      effect.recipients || [],
+      effect.recipientNames || [],
+      config.resolution,
+    );
     state.effects.push(effect);
     await save(actor, state);
     return { status: 'tracked', effectId: effect.id };
@@ -153,12 +166,20 @@ export async function trackingRequest(request, user) {
     const state = trackingState(actor);
     if (request.kind === 'tracking-tick') {
       let changed = false;
-      for (const e of state.effects)
+      for (const e of state.effects) {
         if (e.status === 'active' && effectState(e) === 'expired') {
           e.status = 'expired';
           e.revision++;
           changed = true;
         }
+        if (
+          e.markerCleanup ||
+          (e.status === 'expired' && effectTargets(e).some((t) => t.conditionId))
+        ) {
+          await cleanEffectMarkers(actor, e);
+          changed = true;
+        }
+      }
       if (changed) await save(actor, state);
       return { status: 'updated' };
     }
@@ -207,7 +228,7 @@ export async function trackingRequest(request, user) {
         const day = healingDayStart();
         state.healing = state.healing.filter((h) => h.at >= day);
         state.effects = state.effects.map((e) =>
-          ['ended', 'expired'].includes(effectState(e))
+          !e.markerCleanup && ['ended', 'expired'].includes(effectState(e))
             ? { id: e.id, status: 'ended', revision: e.revision }
             : e,
         );
@@ -220,6 +241,52 @@ export async function trackingRequest(request, user) {
       throw new Error('This effect changed. Refresh Active effects before trying again.');
     if (effect.access?.blind && !user.isGM)
       throw new Error('A GM must manage effects started from a blind cast.');
+    if (request.kind === 'effect-target') {
+      if (!user.isGM)
+        throw new Error('Only a GM can confirm target outcomes or condition markers.');
+      if (!['active', 'due', 'review'].includes(effectState(effect)))
+        throw new Error('This effect has already ended.');
+      if (!TARGET_OUTCOMES.includes(request.outcome))
+        throw new Error('Choose a valid target outcome.');
+      effect.targets = effectTargets(effect);
+      const target = effect.targets.find((t) => t.actorUuid === request.targetUuid);
+      if (!target) throw new Error('This character was not a target of the original cast.');
+      const conditionId = request.outcome === 'affected' ? String(request.conditionId || '') : '';
+      if (conditionId && !conditionChoices().some((s) => s.id === conditionId))
+        throw new Error('Choose a supported condition marker.');
+      // Keep the prior marker identity until cleanup succeeds, including when ending a target.
+      const priorCondition = target.conditionId;
+      target.status = request.outcome;
+      target.conditionId = conditionId;
+      target.markerPending = !!(priorCondition || conditionId || target.markerPending);
+      target.updatedAt = worldTime();
+      effect.revision++;
+      if (
+        effect.targets.length &&
+        effect.targets.every((t) => ['resisted', 'ended'].includes(t.status))
+      ) {
+        effect.status = 'ended';
+        effect.endedAt = worldTime();
+        effect.endReason = 'targets-ended';
+      }
+      effect.markerCleanup = effect.targets.some((t) => t.markerPending)
+        ? 'Condition marker update pending'
+        : '';
+      await save(actor, state);
+      let error = '';
+      try {
+        await syncTargetMarker(actor, effect, target);
+        target.markerPending = false;
+        effect.markerCleanup = '';
+        if (effect.targets.some((t) => t.markerPending))
+          effect.markerCleanup = 'Other target markers need review';
+      } catch (e) {
+        error = `Outcome recorded; condition marker needs GM review: ${e.message}`;
+        effect.markerCleanup = error;
+      }
+      await save(actor, state);
+      return { status: error ? 'review' : 'updated', error };
+    }
     const status = effectState(effect),
       at = worldTime();
     if (!['active', 'due', 'review'].includes(status))
@@ -263,6 +330,8 @@ export async function trackingRequest(request, user) {
       effect.status = 'ended';
       effect.endedAt = at;
       effect.endReason = request.reason;
+      if (effectTargets(effect).some((t) => t.conditionId))
+        effect.markerCleanup = 'Condition cleanup pending';
     }
     effect.revision++;
     const checks = rows.some((r) => r.mode === 'tally' && r.amount > 0)
@@ -290,6 +359,13 @@ export async function trackingRequest(request, user) {
       } catch (e) {
         error = `Payment recorded. Resolve the calamity manually: ${e.message}`;
       }
+    }
+    if (
+      effect.status !== 'active' &&
+      (effect.markerCleanup || effectTargets(effect).some((t) => t.conditionId))
+    ) {
+      error ||= await cleanEffectMarkers(actor, effect);
+      await save(actor, state);
     }
     const label =
       request.kind === 'effect-maintain'

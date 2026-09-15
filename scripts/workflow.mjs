@@ -151,8 +151,8 @@ export function cardHTML(cast) {
   )
     buttons.push(
       cast.activeEffectId
-        ? '<button type="button" data-gca-chat="active-effects">Open active effects</button>'
-        : '<button type="button" data-gca-chat="start-effect">Start ongoing effect</button>',
+        ? '<button type="button" data-gca-chat="resolve-targets">Resolve targets / active effects</button>'
+        : '<button type="button" data-gca-chat="resolve-targets">Resolve targets / start effect</button>',
     );
   if (cast.paid && cast.effect?.amount > 0)
     buttons.push('<button type="button" data-gca-chat="apply">Apply recovery to targets</button>');

@@ -1,3 +1,4 @@
+import { effectTargets } from './effect-targets.mjs';
 import { own } from './core.mjs';
 import { trackingState, effectState, worldTime } from './tracking-model.mjs';
 
@@ -17,7 +18,7 @@ export function accessibleCasters(user = game.user) {
     ).values(),
   ];
 }
-// Public read-only API, schema 1. Consumers never edit tracking flags directly.
+// Public read-only API, schema 2 adds confirmed/pending target outcomes. Consumers never edit tracking flags directly.
 // Records are exposed only from casters this user can own/manage.
 export function activeEffectSummaries(actor, user = game.user) {
   own(actor, user);
@@ -31,10 +32,12 @@ export function activeEffectSummaries(actor, user = game.user) {
       const state = effectState(e, now);
       if (!['active', 'due', 'review'].includes(state)) continue;
       const cast = caster.uuid === actor.uuid,
-        received = e.recipients?.includes(actor.uuid) || false;
-      if (!cast && !received) continue;
+        target = effectTargets(e).find((t) => t.actorUuid === actor.uuid),
+        received = target?.status === 'affected',
+        pending = target?.status === 'pending';
+      if (!cast && !received && !pending) continue;
       results.push({
-        schema: 1,
+        schema: 2,
         id: e.id,
         name: e.name,
         summary: e.summary || '',
@@ -43,6 +46,8 @@ export function activeEffectSummaries(actor, user = game.user) {
         actorUuid: actor.uuid,
         cast,
         received,
+        pending,
+        targetStatus: target?.status || null,
         state,
         endsAt: e.endsAt,
         remaining: e.endsAt === null ? null : Math.max(0, e.endsAt - now),

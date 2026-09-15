@@ -13,13 +13,14 @@ import { trackingState, effectState } from './tracking-model.mjs';
 import { requestMutation, primaryGM } from './mutations.mjs';
 import { accessibleCasters, activeEffectSummaries } from './tracking-summary.mjs';
 let app, grimoire, designer, resourceWindow, activeWindow;
-export async function openActiveEffects(actorUuid = null) {
+export async function openActiveEffects(actorUuid = null, effectId = null) {
   const actor = await resolveActor(actorUuid);
   if (activeWindow?.rendered && activeWindow.actor.uuid !== actor.uuid) {
     await activeWindow.close();
     if (activeWindow.rendered) return activeWindow;
   }
   if (!activeWindow?.rendered) activeWindow = new ActiveEffectsWindow(actor);
+  activeWindow.focusEffect = effectId;
   await activeWindow.render({ force: true });
   activeWindow.raiseWindow();
   return activeWindow;
@@ -242,7 +243,9 @@ export async function refreshTracking() {
     const effects = trackingState(actor).effects;
     if (
       (!primaryGM() || primaryGM().id === game.user.id) &&
-      effects.some((e) => e.status === 'active' && effectState(e) === 'expired')
+      effects.some(
+        (e) => e.markerCleanup || (e.status === 'active' && effectState(e) === 'expired'),
+      )
     )
       await requestMutation({ kind: 'tracking-tick', actorUuid: actor.uuid });
     const due = effects.filter((e) => ['due', 'review'].includes(effectState(e)));
