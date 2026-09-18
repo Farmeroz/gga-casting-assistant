@@ -195,6 +195,18 @@ Hooks.on('getSceneControlButtons', (controls) => {
   };
   if (Array.isArray(tokens.tools)) tokens.tools.push(tool);
   else tokens.tools[ID] = tool;
+  const grimoireTool = {
+    name: `${ID}-grimoire`,
+    title: 'Grimoire',
+    icon: 'fa-solid fa-book',
+    button: true,
+    visible: true,
+    order: 99,
+    onClick: () => openGrimoire(),
+    onChange: () => openGrimoire(),
+  };
+  if (Array.isArray(tokens.tools)) tokens.tools.push(grimoireTool);
+  else tokens.tools[grimoireTool.name] = grimoireTool;
 });
 Hooks.once('ready', () => {
   game.modules.get(ID).api = {

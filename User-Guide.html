@@ -10,7 +10,7 @@
   </head>
   <body>
     <header>
-      <small>GURPS 4e · VERSION 0.3.1</small>
+      <small>GURPS 4e · VERSION 0.7.0</small>
       <h1>GGA Casting Assistant</h1>
       <p>User guide</p>
     </header>
@@ -58,10 +58,13 @@
       <section id="grimoire">
         <h2>Browse your Grimoire</h2>
         <p>
-          Click <strong>Grimoire</strong> at the top of the casting assistant, press
-          <kbd>Alt+B</kbd>, or use <strong>Configure Settings → Module Settings → Grimoire</strong>.
-          It opens in a separate window, so you can keep your collection beside the casting
-          assistant.
+          Use the separate <strong>Grimoire</strong> book icon under Token Controls, click
+          <strong>Grimoire</strong> at the top of the casting assistant, press <kbd>Alt+B</kbd>, or
+          use <strong>Configure Settings → Module Settings → Grimoire</strong>. It opens
+          independently, so you can browse without opening the casting assistant. Use
+          <strong>Create shortcut</strong> to create a macro for the current character, then drag it
+          from the Macro Directory to your hotbar. Select a token or assign your player character
+          when opening through the toolbar or keyboard.
         </p>
         <h3>Find the right entry</h3>
         <p>
@@ -71,10 +74,13 @@
           rituals, powers, standard spells, and threshold setups.
         </p>
         <p>
-          Switch between <strong>Cards</strong> and <strong>List</strong>. Search by name, college,
-          class, notes, or PDF reference. Saved builds also search their tags, casting skill, and
-          original pasted text. All search words must match; put a phrase in quotation marks to keep
-          its words together.
+          Choose <strong>Cards</strong> for visual browsing, <strong>List</strong> for one-line
+          entries with skill, energy, and a Prepare button, or <strong>Table</strong> to compare
+          entries in columns. Click a table heading to sort, then click again to reverse the order.
+          The table includes casting time, duration, college or build type, and clickable PDF
+          references. Scroll horizontally when needed. Search by name, college, class, notes, or PDF
+          reference. Saved builds also search their tags, casting skill, and original pasted text.
+          All search words must match; put a phrase in quotation marks to keep its words together.
         </p>
         <table>
           <thead>
@@ -88,7 +94,10 @@
               <td>Spells / Skills &amp; powers</td>
               <td>
                 Filter by college or class. Sort by name, skill, lowest listed cost, or college.
-                Variable and unrecognised costs appear last when sorting by cost.
+                Energy shows the sheet’s listed cost or the saved build’s base cost, before casting
+                adjustments. Variable and unrecognised costs sort last. Numeric times are compared
+                in seconds, including recognised minute, hour, day, and week units; special or
+                unrecognised times sort last in either direction.
               </td>
             </tr>
             <tr>
@@ -108,15 +117,19 @@
         </p>
         <h3>Inspect and prepare</h3>
         <p>
-          Select a card or row to see its details, sheet notes, and page references. PDF links on
-          both cards and the detail pane use GGA’s existing book mappings, as on the character
-          sheet. The Grimoire displays your sheet’s information; full spell descriptions remain in
-          your PDFs.
+          <strong>Hide details</strong> gives the browser the full width. Selecting an entry shows
+          its details again without opening the assistant. Your chosen layout, details visibility,
+          window size, and position are remembered per user. Select a card or entry name to see its
+          details, sheet notes, and page references. PDF links on both cards and the detail pane use
+          GGA’s existing book mappings, as on the character sheet. The Grimoire displays your
+          sheet’s information; full spell descriptions remain in your PDFs.
         </p>
         <p>
           <strong>Prepare cast</strong> loads the selected spell or skill into the casting
           assistant. <strong>Open casting setup</strong> loads a saved build with its chosen
-          settings. Both open the setup for review. Resolve the cast using
+          settings. The <strong>Prepare</strong> buttons in List and Table do the same for their own
+          entry. These actions open the setup for review and leave Grimoire open. Closing the
+          assistant does not close Grimoire. Resolve the cast using
           <strong>Cast / Resolve</strong> in the assistant. If that window has unsaved changes, you
           can cancel the replacement.
         </p>
