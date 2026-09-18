@@ -143,7 +143,7 @@ test('resource dialog preset survives rendering and creates a threshold with an 
   assert.equal(actor.system.additionalresources.tracker['0000'].isMaximumEnforced, false);
 });
 
-test('Grimoire renders populated spell, skill and saved-build tabs in both layouts', async () => {
+test('Grimoire renders populated spell, skill and saved-build tabs in all layouts', async () => {
   const actor = makeActor();
   actor.system.spells = { '0000': { name: 'Light', level: 14, cost: '1' } };
   game.user.getFlag = () => undefined;
@@ -163,19 +163,21 @@ test('Grimoire renders populated spell, skill and saved-build tabs in both layou
   const book = new Grimoire(actor, {});
   for (const tab of ['spells', 'skills', 'builds']) {
     book.prefs.tab = tab;
-    for (const layout of ['cards', 'list']) {
+    for (const layout of ['cards', 'list', 'table']) {
       book.prefs.layout = layout;
       await book.render();
       assert.equal(
-        book.element.querySelectorAll('.gca-book-card').length,
+        book.element.querySelectorAll('.gca-book-card, .gca-book-entry').length,
         { spells: 1, skills: 2, builds: 3 }[tab],
       );
       assert.equal(
         book.element.querySelectorAll('.gca-book-card [data-grimoire="design-ritual"]').length,
-        tab === 'builds' ? 2 : 0,
+        tab === 'builds' && layout === 'cards' ? 2 : 0,
       );
     }
   }
+  book.prefs.layout = 'cards';
+  await book.render();
   let edited;
   game.modules.set(ID, {
     api: { designer: async (uuid, profile) => (edited = { uuid, profile }) },

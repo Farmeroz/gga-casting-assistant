@@ -22,6 +22,8 @@ import {
   bookmarkMatches,
   RULE_LABELS,
   plainText,
+  itemCategory,
+  BOOK_SORTS,
 } from './grimoire-model.mjs';
 
 const App = CastingWindow;
@@ -31,6 +33,32 @@ const option = (v, l, selected) =>
   `<option value="${esc(v)}"${v === selected ? ' selected' : ''}>${esc(l)}</option>`;
 const choose = (field, label, choices, selected) =>
   `<label><span>${label}</span><select data-browse="${field}">${choices.map(([v, l]) => option(v, l, selected)).join('')}</select></label>`;
+export function grimoirePosition(saved = {}, viewport = window) {
+  const finite = (n) => typeof n === 'number' && Number.isFinite(n);
+  const screenWidth = viewport.innerWidth || 1280;
+  const screenHeight = viewport.innerHeight || 900;
+  const width = Math.max(560, Math.min(finite(saved.width) ? saved.width : 1180, screenWidth - 30));
+  const height = Math.max(
+    440,
+    Math.min(finite(saved.height) ? saved.height : 800, screenHeight - 50),
+  );
+  const result = { width, height };
+  for (const [key, bound] of [
+    ['left', screenWidth - width],
+    ['top', screenHeight - height],
+  ])
+    if (finite(saved[key])) result[key] = Math.max(0, Math.min(saved[key], Math.max(0, bound)));
+  return result;
+}
+const tableColumns = [
+  ['name', 'Name'],
+  ['skill', 'Skill'],
+  ['cost', 'Energy'],
+  ['castTime', 'Cast time'],
+  ['duration', 'Duration'],
+  ['category', 'College / type'],
+];
+const sortPair = (key) => (key === 'skill' ? ['skill', 'skill-asc'] : [key, `${key}-desc`]);
 const textBlock = (text) => `<div class="gca-book-text">${esc(text)}</div>`;
 const numberLabel = (n) => (n == null || !Number.isFinite(n) ? '—' : n);
 const viewDefaults = () => ({
@@ -79,12 +107,7 @@ export class Grimoire extends App {
   constructor(actor, actions) {
     const raw = clone(game.user.getFlag(ID, 'grimoirePreferences') || {}),
       position = raw.position || {};
-    super({
-      position: {
-        width: Math.max(560, Math.min(position.width || 1180, window.innerWidth - 30)),
-        height: Math.max(440, Math.min(position.height || 800, window.innerHeight - 50)),
-      },
-    });
+    super({ position: grimoirePosition(position) });
     this.actor = actor;
     this.actions = actions;
     this.selected = null;
@@ -92,11 +115,14 @@ export class Grimoire extends App {
     this.status = 'Select an entry to explore it.';
     this.prefs = {
       tab: ['spells', 'skills', 'builds'].includes(raw.tab) ? raw.tab : 'spells',
-      layout: raw.layout === 'list' ? 'list' : 'cards',
+      layout: ['cards', 'list', 'table'].includes(raw.layout) ? raw.layout : 'cards',
+      details: raw.details !== false,
       views: Object.fromEntries(
         ['spells', 'skills', 'builds'].map((t) => [t, { ...viewDefaults(), ...raw.views?.[t] }]),
       ),
     };
+    for (const view of Object.values(this.prefs.views))
+      if (view.sort === 'college') view.sort = 'category';
     this._saveQueue = Promise.resolve();
   }
   get filters() {
@@ -107,7 +133,11 @@ export class Grimoire extends App {
   }
   async persist() {
     const prefs = clone(this.prefs);
-    prefs.position = { width: this.position.width, height: this.position.height };
+    prefs.position = Object.fromEntries(
+      ['width', 'height', 'left', 'top']
+        .map((k) => [k, this.position[k]])
+        .filter(([, v]) => Number.isFinite(v)),
+    );
     this._saveQueue = this._saveQueue
       .catch(() => {})
       .then(() => game.user.setFlag(ID, 'grimoirePreferences', prefs));
@@ -162,6 +192,50 @@ export class Grimoire extends App {
         `class="gca-book-select" data-id="${esc(item.id)}" aria-pressed="${item.id === this.selected}"`,
       )}${item.pageRef ? `<div class="gca-book-card-refs">${pageLinks(item.pageRef)}</div>` : ''}
     </article>`;
+  }
+  entryButtons(item) {
+    const id = `data-id="${esc(item.id)}"`;
+    return {
+      star: button(
+        'favourite',
+        item.favourite ? '★' : '☆',
+        `${id} class="gca-book-row-star" aria-label="${item.favourite ? 'Remove' : 'Add'} ${esc(item.name)} ${item.favourite ? 'from' : 'to'} favourites" aria-pressed="${item.favourite}"`,
+      ),
+      name: button(
+        'select',
+        `${esc(item.name)}${item.issues.length ? '<span class="gca-book-review" aria-label="Review setup"> ⚠</span>' : ''}`,
+        `${id} class="gca-book-row-name" aria-pressed="${item.id === this.selected}" title="${esc(item.name)}"`,
+      ),
+      prepare: button('prepare', 'Prepare', `${id} aria-label="Prepare ${esc(item.name)}"`),
+    };
+  }
+  compactRow(item) {
+    const b = this.entryButtons(item);
+    return `<div class="gca-book-entry gca-book-row ${item.id === this.selected ? 'is-selected' : ''}">${b.star}${b.name}<span class="gca-book-row-stat" title="Casting skill"><small>Skill</small> ${numberLabel(item.level)}</span><span class="gca-book-row-stat" title="${item.type === 'profile' ? 'Base energy' : 'Listed energy cost'}"><small>Energy</small> ${esc(item.cost)}</span>${b.prepare}</div>`;
+  }
+  table(items) {
+    const current = this.filters.sort;
+    const headers = tableColumns
+      .map(([key, label]) => {
+        const pair = sortPair(key),
+          active = pair.includes(current);
+        const descending = key === 'skill' ? current === 'skill' : current === pair[1];
+        const direction = active ? (descending ? 'descending' : 'ascending') : 'none';
+        return `<th scope="col" aria-sort="${direction}">${button('sort-column', `${label}${active ? (descending ? ' ↓' : ' ↑') : ''}`, `data-sort="${key}" aria-label="Sort by ${label}"`)}</th>`;
+      })
+      .join('');
+    return `<table class="gca-book-table"><caption class="gca-sr">Grimoire entries. Energy is the listed cost or saved base energy before casting adjustments.</caption><thead><tr><th scope="col"><span class="gca-sr">Favourite</span></th>${headers}<th scope="col">Reference</th><th scope="col"><span class="gca-sr">Prepare</span></th></tr></thead><tbody>${items
+      .map((item) => {
+        const b = this.entryButtons(item);
+        return `<tr class="gca-book-entry ${item.id === this.selected ? 'is-selected' : ''}"><td>${b.star}</td><td>${b.name}</td><td>${numberLabel(item.level)}</td><td>${esc(item.cost)}</td><td>${esc(item.castTime)}</td><td>${esc(item.duration)}</td><td>${esc(itemCategory(item))}</td><td>${pageLinks(item.pageRef) || '—'}</td><td>${b.prepare}</td></tr>`;
+      })
+      .join('')}</tbody></table>`;
+  }
+  entries(items) {
+    if (this.prefs.layout === 'table') return this.table(items);
+    return items
+      .map((item) => (this.prefs.layout === 'list' ? this.compactRow(item) : this.card(item)))
+      .join('');
   }
   details(item) {
     if (!item)
@@ -252,7 +326,7 @@ export class Grimoire extends App {
         ].map((a) => [a.uuid, a]),
       ).values(),
     ];
-    root.innerHTML = `<header class="gca-book-header"><div><div class="gca-kicker">GURPS 4e · ${esc(this.actor.name)}</div><h1>Grimoire</h1><p>Spells, powers, and the builds you return to.</p></div><div class="gca-book-header-tools"><label class="gca-sr" for="gca-book-actor">Character</label><select id="gca-book-actor" data-book-actor>${actors.map((a) => option(a.uuid, a.name, this.actor.uuid)).join('')}</select>${button('casting', 'Casting assistant')}${button('new-build', '+ Create RPM spell', 'class="gca-primary"')}</div></header>
+    root.innerHTML = `<header class="gca-book-header"><div><div class="gca-kicker">GURPS 4e · ${esc(this.actor.name)}</div><h1>Grimoire</h1><p>Spells, powers, and the builds you return to.</p></div><div class="gca-book-header-tools"><label class="gca-sr" for="gca-book-actor">Character</label><select id="gca-book-actor" data-book-actor>${actors.map((a) => option(a.uuid, a.name, this.actor.uuid)).join('')}</select>${button('casting', 'Casting assistant')}${button('grimoire-shortcut', 'Create shortcut')}${button('new-build', '+ Create RPM spell', 'class="gca-primary"')}</div></header>
       <div class="gca-book-navigation"><nav class="gca-tabs" aria-label="Grimoire sections">${[
         ['spells', 'Spells'],
         ['skills', 'Skills & powers'],
@@ -267,15 +341,20 @@ export class Grimoire extends App {
         )
         .join(
           '',
-        )}</nav><div class="gca-book-view-tools">${button('favourites', filters.favourites ? '★ Favourites' : '☆ Favourites', `aria-pressed="${filters.favourites}"`)}<div class="gca-book-layout" aria-label="View">${button('layout', 'Cards', `data-layout="cards" aria-pressed="${this.prefs.layout === 'cards'}"`)}${button('layout', 'List', `data-layout="list" aria-pressed="${this.prefs.layout === 'list'}"`)}</div></div></div>
+        )}</nav><div class="gca-book-view-tools">${button('favourites', filters.favourites ? '★ Favourites' : '☆ Favourites', `aria-pressed="${filters.favourites}"`)}<div class="gca-book-layout" aria-label="View">${button('layout', 'Cards', `data-layout="cards" aria-pressed="${this.prefs.layout === 'cards'}"`)}${button('layout', 'List', `data-layout="list" aria-pressed="${this.prefs.layout === 'list'}"`)}${button('layout', 'Table', `data-layout="table" aria-pressed="${this.prefs.layout === 'table'}"`)}</div>${button('toggle-details', this.prefs.details ? 'Hide details' : 'Show details', `aria-expanded="${this.prefs.details}" aria-controls="gca-book-detail"`)}</div></div>
       <div class="gca-book-filters"><label class="gca-book-search"><span class="gca-sr">Search Grimoire</span><input type="search" data-browse="query" placeholder="${builds ? 'Search builds, tags, notes, or original text…' : 'Search name, college, class, or sheet notes…'}" value="${esc(filters.query)}"></label>
         ${builds ? choose('rules', 'Type', [['', 'All types'], ...Object.entries(RULE_LABELS)], filters.rules) : choose('college', 'College', [['', 'All colleges'], ...facet.colleges.map((c) => [c, c])], filters.college)}
         ${builds ? choose('tag', 'Tag', [['', 'All tags'], ...facet.tags.map((t) => [t, t])], filters.tag) : choose('class', 'Class', [['', 'All classes'], ...facet.classes.map((c) => [c, c])], filters.class)}
-        ${choose('sort', 'Sort', [['name', 'Name A–Z'], ['name-desc', 'Name Z–A'], ['skill', 'Highest skill'], ['cost', builds ? 'Lowest base energy' : 'Lowest listed cost'], ...(!builds ? [['college', 'College']] : [['recent', 'Recently saved']])], filters.sort)}${button('clear', 'Clear', 'title="Clear this view’s filters"')}</div>
-      <div class="gca-book-body"><section class="gca-book-browser" aria-label="Entries"><div class="gca-book-count"><span>${visible.length} of ${counts[this.prefs.tab]} ${builds ? 'saved builds' : this.prefs.tab === 'skills' ? 'skills' : 'spells'}${filters.favourites ? ' · favourites' : ''}</span>${builds ? `<div>${button('import', 'Import')}${button('export-view', 'Export shown', visible.length ? '' : 'disabled')}</div>` : ''}</div>
-        <div class="gca-book-results ${this.prefs.layout === 'list' ? 'is-list' : 'is-cards'}" aria-label="Grimoire entries">${visible.length ? visible.map((i) => this.card(i)).join('') : `<div class="gca-book-empty"><span aria-hidden="true">◇</span><h2>${counts[this.prefs.tab] ? 'No matches' : 'Nothing here yet'}</h2><p>${counts[this.prefs.tab] ? 'Clear the filters or try another search.' : builds ? 'Save a casting profile or start a new RPM build.' : 'Entries from this character’s sheet appear here.'}</p>${button(counts[this.prefs.tab] ? 'clear' : builds ? 'new-build' : 'sheet', counts[this.prefs.tab] ? 'Clear filters' : builds ? 'New RPM build' : 'Open character sheet')}</div>`}</div></section>
-        <aside class="gca-book-detail" aria-label="Selected entry">${this.details(selected)}</aside></div>
-      <footer class="gca-book-footer"><span role="status">${esc(this.status)}</span><span>Prepare here.  Resolve in the casting assistant.</span></footer><input type="file" data-book-import accept="application/json,.json" hidden>`;
+        ${choose(
+          'sort',
+          'Sort',
+          BOOK_SORTS.filter(([key]) => builds || key !== 'recent'),
+          filters.sort,
+        )}${button('clear', 'Clear', 'title="Clear this view’s filters"')}</div>
+      <div class="gca-book-body ${this.prefs.details ? '' : 'details-hidden'}"><section class="gca-book-browser" aria-label="Entries"><div class="gca-book-count"><span>${visible.length} of ${counts[this.prefs.tab]} ${builds ? 'saved builds' : this.prefs.tab === 'skills' ? 'skills' : 'spells'}${filters.favourites ? ' · favourites' : ''}</span>${builds ? `<div>${button('import', 'Import')}${button('export-view', 'Export shown', visible.length ? '' : 'disabled')}</div>` : ''}</div>
+        <div class="gca-book-results is-${this.prefs.layout}" aria-label="Grimoire entries">${visible.length ? this.entries(visible) : `<div class="gca-book-empty"><span aria-hidden="true">◇</span><h2>${counts[this.prefs.tab] ? 'No matches' : 'Nothing here yet'}</h2><p>${counts[this.prefs.tab] ? 'Clear the filters or try another search.' : builds ? 'Save a casting profile or start a new RPM build.' : 'Entries from this character’s sheet appear here.'}</p>${button(counts[this.prefs.tab] ? 'clear' : builds ? 'new-build' : 'sheet', counts[this.prefs.tab] ? 'Clear filters' : builds ? 'New RPM build' : 'Open character sheet')}</div>`}</div></section>
+        <aside id="gca-book-detail" class="gca-book-detail" aria-label="Selected entry" ${this.prefs.details ? '' : 'hidden'}>${this.details(selected)}</aside></div>
+      <footer class="gca-book-footer"><span role="status">${esc(this.status)}</span><span>Energy: listed or base cost.  Prepare opens the assistant.</span></footer><input type="file" data-book-import accept="application/json,.json" hidden>`;
     if (this.busy)
       root.querySelectorAll('button,input,select').forEach((el) => (el.disabled = true));
     return root;
@@ -288,13 +367,16 @@ export class Grimoire extends App {
       end = active?.selectionEnd;
     const focusAction = active?.dataset.grimoire,
       focusData = { ...active?.dataset };
-    const scroll = content.querySelector('.gca-book-results')?.scrollTop || 0;
+    const previousResults = content.querySelector('.gca-book-results');
+    const scroll = previousResults?.scrollTop || 0;
+    const scrollLeft = previousResults?.scrollLeft || 0;
     const detailScroll =
       this._renderedSelection === this.selected
         ? content.querySelector('.gca-book-detail-scroll')?.scrollTop || 0
         : 0;
     content.replaceChildren(root);
     root.querySelector('.gca-book-results').scrollTop = scroll;
+    root.querySelector('.gca-book-results').scrollLeft = scrollLeft;
     const detail = root.querySelector('.gca-book-detail-scroll');
     if (detail) detail.scrollTop = detailScroll;
     if (field) {
@@ -305,7 +387,7 @@ export class Grimoire extends App {
       const el = [...root.querySelectorAll('[data-grimoire]')].find(
         (e) =>
           e.dataset.grimoire === focusAction &&
-          ['id', 'tab', 'layout', 'value'].every((k) => e.dataset[k] === focusData[k]),
+          ['id', 'tab', 'layout', 'value', 'sort'].every((k) => e.dataset[k] === focusData[k]),
       );
       el?.focus({ preventScroll: true });
     }
@@ -375,6 +457,7 @@ export class Grimoire extends App {
     switch (action) {
       case 'select':
         this.selected = el.dataset.id;
+        this.prefs.details = true;
         this.status = 'Use Prepare cast to open a casting setup.';
         break;
       case 'tab':
@@ -384,6 +467,28 @@ export class Grimoire extends App {
       case 'layout':
         this.prefs.layout = el.dataset.layout;
         break;
+      case 'toggle-details':
+        this.prefs.details = !this.prefs.details;
+        break;
+      case 'sort-column': {
+        if (!tableColumns.some(([key]) => key === el.dataset.sort)) return;
+        const pair = sortPair(el.dataset.sort);
+        this.prefs.views[this.prefs.tab].sort = this.filters.sort === pair[0] ? pair[1] : pair[0];
+        break;
+      }
+      case 'grimoire-shortcut':
+        await this.work(async () => {
+          own(this.actor);
+          await Macro.create({
+            name: `Grimoire: ${this.actor.name}`,
+            type: 'script',
+            img: 'icons/svg/book.svg',
+            command: `game.modules.get('${ID}').api.grimoire(${JSON.stringify(this.actor.uuid)});`,
+          });
+          this.status = 'Grimoire shortcut created in the Macro Directory. Drag it to your hotbar.';
+          ui.notifications.info(this.status);
+        });
+        return;
       case 'clear':
         this.prefs.views[this.prefs.tab] = viewDefaults();
         break;

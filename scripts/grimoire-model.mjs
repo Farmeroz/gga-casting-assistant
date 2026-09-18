@@ -174,6 +174,36 @@ export function filterItems(items, filters = {}) {
       tokens.every((t) => i.search.includes(t)),
   );
 }
+// Plain numeric sheet times are seconds. Special/conditional text remains unranked.
+export function listedSeconds(value) {
+  const text = normalise(value);
+  const m = text.match(
+    /^(\d+(?:\.\d+)?)\s*(s|sec(?:ond)?s?|m|min(?:ute)?s?|h|hrs?|hours?|d|days?|w|weeks?)?\.?$/,
+  );
+  if (!m) return null;
+  const unit = m[2] || 's';
+  return Number(m[1]) * { s: 1, m: 60, h: 3600, d: 86400, w: 604800 }[unit[0]];
+}
+export function itemCategory(item) {
+  return item.type === 'profile'
+    ? RULE_LABELS[item.kind] || item.kind
+    : item.colleges.join(' · ') || item.fullClass || 'Skill / power';
+}
+export const BOOK_SORTS = [
+  ['name', 'Name A–Z'],
+  ['name-desc', 'Name Z–A'],
+  ['skill', 'Highest skill'],
+  ['skill-asc', 'Lowest skill'],
+  ['cost', 'Lowest listed / base energy'],
+  ['cost-desc', 'Highest listed / base energy'],
+  ['castTime', 'Shortest casting time'],
+  ['castTime-desc', 'Longest casting time'],
+  ['duration', 'Shortest duration'],
+  ['duration-desc', 'Longest duration'],
+  ['category', 'College / type A–Z'],
+  ['category-desc', 'College / type Z–A'],
+  ['recent', 'Recently saved'],
+];
 export function sortItems(items, sort = 'name') {
   const name = (a, b) =>
     a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }) ||
@@ -182,8 +212,24 @@ export function sortItems(items, sort = 'name') {
     a == null ? (b == null ? 0 : 1) : b == null ? -1 : desc ? b - a : a - b;
   return [...items].sort((a, b) => {
     if (sort === 'name-desc') return name(b, a);
-    if (sort === 'skill') return number(a.level, b.level, true) || name(a, b);
-    if (sort === 'cost') return number(a.costNumber, b.costNumber) || name(a, b);
+    if (['skill', 'skill-asc'].includes(sort))
+      return number(a.level, b.level, sort === 'skill') || name(a, b);
+    if (['cost', 'cost-desc'].includes(sort))
+      return number(a.costNumber, b.costNumber, sort === 'cost-desc') || name(a, b);
+    for (const field of ['castTime', 'duration']) {
+      if (sort === field || sort === `${field}-desc`)
+        return (
+          number(listedSeconds(a[field]), listedSeconds(b[field]), sort.endsWith('-desc')) ||
+          name(a, b)
+        );
+    }
+    if (['category', 'category-desc'].includes(sort)) {
+      const result = itemCategory(a).localeCompare(itemCategory(b), undefined, {
+        sensitivity: 'base',
+        numeric: true,
+      });
+      return (sort === 'category-desc' ? -result : result) || name(a, b);
+    }
     if (sort === 'college')
       return (a.colleges[0] || '\uffff').localeCompare(b.colleges[0] || '\uffff') || name(a, b);
     if (sort === 'recent')

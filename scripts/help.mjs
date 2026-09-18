@@ -2,7 +2,7 @@ import { createHelpController, helpResolver } from './tooltip-engine.mjs';
 export const helpConfig = {
   id: 'gga-casting-assistant',
   scope:
-    '.gca-help-dialog, .gca-window, .gca-book-dialog, .gca-chat-actions, [data-gca-approve], [name^="gga-casting-assistant."], [data-key^="gga-casting-assistant."], [data-tool="gga-casting-assistant"], [data-control="gga-casting-assistant"]',
+    '.gca-help-dialog, .gca-window, .gca-book-dialog, .gca-chat-actions, [data-gca-approve], [name^="gga-casting-assistant."], [data-key^="gga-casting-assistant."], [data-tool="gga-casting-assistant"], [data-control="gga-casting-assistant"], [data-tool="gga-casting-assistant-grimoire"], [data-control="gga-casting-assistant-grimoire"]',
   actions: {
     'active-effects':
       'Open this caster’s active spells, maintenance reminders, and repeated-healing history.',
@@ -34,7 +34,13 @@ export const helpConfig = {
     'open-profile': 'Open this saved casting setup for review.',
     favourite: 'Add or remove this entry from your favourites.',
     favourites: 'Show only favourites, or return to all matching entries.',
-    layout: 'Switch between Grimoire cards and the compact list.',
+    layout: 'Choose cards, a compact one-line list, or a sortable comparison table.',
+    'toggle-details':
+      'Show or hide the selected entry’s details. Selecting an entry shows its details again.',
+    'sort-column':
+      'Sort by this column. Click again to reverse the order. Unknown costs and special or unrecognised times remain last.',
+    'grimoire-shortcut':
+      'Create a macro that opens this character’s Grimoire independently. Drag the new macro from the Macro Directory to your hotbar.',
     tag: 'Filter saved builds by this tag.',
     clear: 'Clear the Grimoire filters.',
     'toggle-browser': 'Show or hide the compact spell and profile browser.',
@@ -225,6 +231,14 @@ export const helpConfig = {
       'Choose the actor whose spells and saved profiles are shown.',
     ],
     ['[data-search], [data-browse="query"]', 'Filter the entries by the search text.'],
+    [
+      '[data-grimoire="sort-column"]',
+      'Sort by this column. Click again to reverse. Unrecognised costs and special times remain last.',
+    ],
+    [
+      '[data-tool="gga-casting-assistant-grimoire"], [data-control="gga-casting-assistant-grimoire"]',
+      'Open the Grimoire independently to browse spells and saved builds.',
+    ],
     ['[data-sort], [data-browse="sort"]', 'Choose how matching entries are ordered.'],
     ['[data-kind], [data-browse]', 'Filter the Grimoire entries without changing saved builds.'],
     ['[data-grimoire="select"]', 'Show this entry’s details without casting it.'],
