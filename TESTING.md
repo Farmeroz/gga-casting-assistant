@@ -1,5 +1,13 @@
 # Testing
 
+## GGA 0.18.24–0.18.26 compatibility
+
+Regression tests cover page labels, multiword and registered PDF codes, embedded colons, numeric page ranges, HTML escaping, modern/legacy PDF dispatch, unique melee relinking after GCS usage-note import, and ambiguous-mode rejection. The existing suite also exercises casting and resource workflows.
+
+Live checks: open `B248`, `DFC:A-10`, and a mapped `DFRPG Spells:20` from the casting window and Grimoire. Reimport a GCS character with one annotated melee mode, then with two similarly named modes; the unique link should recover and the ambiguous link should require explicit selection. Save the selected attack and reopen the profile.
+
+With GM Control Sheet enabled, compare targeted rolls and their range/size modifiers against the character sheet. Toggle the world's combat options and check participating and nonparticipating actors. Check light/dark appearance and imported self-control notes. GGA 1.0 migration remains deferred.
+
 Start with the setup commands in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Automated coverage
