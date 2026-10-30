@@ -1,6 +1,12 @@
 # GGA Casting Assistant
 
-Version 0.7.0. Cast spells and powers, browse your Grimoire, save reusable RPM builds, allocate resources, and apply healing in GURPS 4e Game Aid.
+Version 0.7.1. Cast spells and powers, browse your Grimoire, save reusable RPM builds, allocate resources, and apply healing in GURPS 4e Game Aid.
+
+## Changes in 0.7.1
+
+PDF links now accept GGA 0.18.24's page labels and custom book codes, including `DFC:A-10` and `DFRPG Spells:20`. Numeric page ranges still open at their first page.
+
+Saved melee attack links recover when GGA 0.18.25 appends GCS usage notes during reimport and there is exactly one matching attack. If several attacks could match, select the correct **Linked attack** and save the profile. Existing annotated modes remain distinct.
 
 ## Install or update
 

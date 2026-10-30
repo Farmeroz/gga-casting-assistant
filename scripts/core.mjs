@@ -66,7 +66,23 @@ export function resolveReference(ref, entries) {
     (e) =>
       e.kind === ref.kind && e.name === ref.name && (e.object?.mode || '') === (ref.mode || ''),
   );
-  return matches.find((e) => e.key === ref.key) || (matches.length === 1 ? matches[0] : null);
+  if (matches.length)
+    return matches.find((e) => e.key === ref.key) || (matches.length === 1 ? matches[0] : null);
+
+  // GGA 0.18.25 appends GCS usage notes to melee modes on reimport.
+  // Recover only an unambiguous extension of an old mode. Never use the old
+  // array position to choose between newly distinguished attacks.
+  if (ref.kind !== 'melee') return null;
+  const legacyMode = ref.mode || '';
+  if (legacyMode.includes('[') || legacyMode.includes(']')) return null;
+  const migrated = entries.filter(
+    (e) =>
+      e.kind === ref.kind &&
+      e.name === ref.name &&
+      (e.object?.mode || '').startsWith(`${legacyMode} [`) &&
+      (e.object?.mode || '').endsWith(']'),
+  );
+  return migrated.length === 1 ? migrated[0] : null;
 }
 export function resources(actor) {
   const out = [];
